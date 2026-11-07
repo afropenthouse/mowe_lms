@@ -1,0 +1,10 @@
+node_modules/
+.env
+.env.local
+.dev.vars
+dist/
+.wrangler/
+.vinext/
+.sites-runtime/
+*.tsbuildinfo
+backend/src/generated/

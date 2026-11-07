@@ -1,0 +1,579 @@
+.certificate-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 26px;
+}
+.certificate-stats > div {
+  padding: 22px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.certificate-stats span,
+.certificate-stats small {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+}
+.certificate-stats strong {
+  display: block;
+  font-size: 30px;
+  color: var(--heading);
+  margin: 9px 0 3px;
+}
+.certificate-register-heading {
+  padding: 22px;
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+}
+.certificate-register-heading h2 {
+  font-size: 19px;
+  margin-bottom: 5px;
+}
+.certificate-register-heading p {
+  font-size: 13px;
+}
+.certificate-register {
+  min-width: 800px;
+}
+.certificate-register td small {
+  display: block;
+  font-size: 12px;
+  margin-top: 7px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.certificate-admin .table-wrap {
+  border: 0;
+  border-radius: 0;
+  margin: 0;
+}
+.certificate-pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 22px;
+  font-size: 12px;
+  border-top: 1px solid var(--line);
+}
+.certificate-pagination > div {
+  display: flex;
+  gap: 8px;
+}
+.certificate-settings {
+  display: grid;
+  gap: 18px;
+}
+.certificate-settings > label {
+  display: grid;
+  gap: 7px;
+  font-size: 13px;
+}
+.certificate-rules {
+  padding: 18px;
+  background: var(--surface-muted);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 14px;
+  font-size: 13px;
+}
+.certificate-rules p {
+  font-size: 12px;
+  line-height: 1.6;
+}
+.certificate-rules label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.certificate-rules input {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+.certificate-notice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: var(--success-bg);
+  color: var(--success);
+  border-radius: 8px;
+  font-size: 13px;
+  margin-bottom: 22px;
+}
+.certificate-notice button {
+  margin-left: auto;
+  color: inherit;
+}
+.issued-certificate {
+  max-width: 1120px;
+  margin: 40px auto;
+  padding: 32px;
+}
+.credential-tools {
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  align-items: center;
+  margin: 20px 0;
+  font-size: 13px;
+}
+.credential-tools > span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--success);
+}
+.certificate-admin .people-toolbar > select {
+  width: auto;
+  max-width: 100%;
+  font-size: 13px;
+}
+.certificate-settings .account-dialog-actions {
+  flex-wrap: wrap;
+}
+.credential-document {
+  --heading: #fff;
+  --ink: #fff;
+  --muted: #dbe7f5;
+  color-scheme: light;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: #0f2a52;
+  color: #fff;
+  border: 1px solid #0a1e3b;
+  border-top: 6px solid #ef493e;
+  padding: 27px 38px 18px;
+  box-shadow: 0 8px 35px #102a490a;
+}
+.credential-document::before {
+  content: "";
+  position: absolute;
+  inset: 12px;
+  border: 1px solid #ffffff45;
+  pointer-events: none;
+  z-index: -1;
+}
+.credential-document::after {
+  content: "";
+  position: absolute;
+  right: -110px;
+  top: -135px;
+  width: 290px;
+  height: 290px;
+  border: 28px solid #ef493e;
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 9px #0f2a52,
+    0 0 0 11px #fff;
+  opacity: 0.08;
+  z-index: -1;
+}
+.credential-topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+.credential-topline img {
+  display: block;
+  width: 140px;
+  height: auto;
+  filter: none;
+}
+.credential-topline > span {
+  text-align: right;
+  font-size: 8px;
+  letter-spacing: 1.7px;
+  color: #dbe7f5;
+}
+.credential-topline b {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  letter-spacing: 0;
+  color: #fff;
+}
+.credential-main {
+  text-align: center;
+  padding: 23px 0 20px;
+}
+.credential-document h1 {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(28px, 3vw, 39px);
+  font-weight: 400;
+  letter-spacing: -1.6px;
+  line-height: 1.18;
+  margin: 0 0 16px;
+  color: #fff;
+}
+.credential-document h1 em {
+  font-size: inherit;
+  font-weight: 400;
+  letter-spacing: 0;
+  margin-left: 3px;
+}
+.credential-document .credential-presented {
+  font-size: 12px;
+  color: #dbe7f5;
+}
+.credential-document h2 {
+  width: fit-content;
+  max-width: 100%;
+  margin: 9px auto 6px;
+  padding: 0 24px 9px;
+  border-bottom: 2px solid #ef493e;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(28px, 3vw, 40px);
+  font-weight: 400;
+  line-height: 1.25;
+  letter-spacing: -0.8px;
+  color: #fff;
+  overflow-wrap: anywhere;
+}
+.credential-student {
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: #dbe7f5;
+}
+.credential-document .credential-description {
+  max-width: 470px;
+  margin: 14px auto 6px;
+  font-size: 12px;
+  line-height: 1.7;
+  color: #dbe7f5;
+}
+.credential-document h3 {
+  margin: 0 auto 7px;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: #fff;
+}
+.credential-bottom {
+  display: grid;
+  grid-template-columns: 1fr 96px 1fr;
+  align-items: end;
+  gap: 24px;
+  margin-top: 2px;
+}
+.credential-signature,
+.credential-date {
+  text-align: center;
+  padding-top: 10px;
+  border-top: 1px solid #ffffff65;
+}
+.credential-date {
+  border-top: 0;
+  padding: 0 8px 5px;
+  align-self: center;
+}
+.credential-date > span {
+  margin: 0 0 8px;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+.credential-bottom strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.credential-signature {
+  border-top: 0;
+  padding-top: 0;
+}
+.credential-autograph {
+  font-family: "Segoe Script", "Brush Script MT", cursive;
+  font-size: 27px;
+  font-style: italic;
+  font-weight: 400;
+  line-height: 1.25;
+  color: #fff;
+  padding: 0 8px 7px;
+  transform: rotate(-5deg);
+  overflow-wrap: anywhere;
+}
+.credential-signature > strong {
+  border-top: 1px solid #ffffff65;
+  padding-top: 10px;
+}
+.credential-bottom span {
+  display: block;
+  font-size: 10px;
+  color: #dbe7f5;
+  margin-top: 5px;
+}
+.credential-emblem {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  justify-self: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #ffffffa0;
+  outline: 1px solid #ef493e;
+  outline-offset: 3px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 30%, #df3a2d, #b92318);
+  color: #fff;
+}
+.credential-laurel {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  color: #fff0e9;
+  opacity: 0.85;
+}
+.credential-seal-core {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding-top: 1px;
+}
+.credential-emblem-icon {
+  margin-bottom: 3px;
+}
+.credential-emblem span {
+  margin: 1px 0 0;
+  color: inherit;
+  font-size: 8px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 1.4px;
+}
+.credential-emblem small {
+  font-size: 5px;
+  line-height: 1.5;
+  letter-spacing: 1px;
+}
+.credential-reference {
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+  border-top: 1px solid #ffffff35;
+  padding-top: 13px;
+  margin-top: 19px;
+  font-size: 8px;
+  color: #dbe7f5;
+  overflow-wrap: anywhere;
+}
+.credential-reference span:first-child {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.credential-verify-link {
+  margin-top: 14px;
+  text-align: center;
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+.certificate-demo-page {
+  max-width: 1200px;
+  margin: auto;
+}
+.certificate-sample-modal {
+  position: relative;
+  width: min(960px, calc(100vw - 32px));
+  max-height: calc(100dvh - 48px);
+  overflow: auto;
+  background: #fffefb;
+  padding: 46px 15px 15px;
+  border-radius: 10px;
+}
+.certificate-sample-modal .modal-close {
+  color: #102a49;
+  top: 9px;
+  right: 12px;
+}
+.certificate-demo-page > .text-link {
+  margin-bottom: 19px;
+}
+.certificate-demo-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+  padding: 18px 22px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  margin-bottom: 25px;
+}
+.certificate-demo-toolbar label {
+  display: grid;
+  gap: 5px;
+  font-size: 12px;
+  flex: 0 1 280px;
+}
+.certificate-demo-toolbar input {
+  font-size: 14px;
+}
+.certificate-demo-toolbar p {
+  font-size: 12px;
+  line-height: 1.7;
+  max-width: 490px;
+}
+.certificate-demo-toolbar a {
+  text-decoration: underline;
+  color: var(--heading);
+}
+.certificate-demo-paper {
+  padding: 0;
+  margin: 0 auto;
+}
+@media (max-width: 700px) {
+  .certificate-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .certificate-stats > div {
+    padding: 16px;
+  }
+  .certificate-admin .people-heading,
+  .certificate-register-heading,
+  .certificate-demo-page .people-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .certificate-pagination,
+  .credential-tools {
+    flex-wrap: wrap;
+  }
+  .issued-certificate {
+    padding: 16px;
+  }
+  .certificate-demo-paper {
+    padding: 0;
+  }
+  .certificate-demo-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 13px;
+  }
+  .certificate-demo-toolbar label {
+    flex-basis: auto;
+  }
+  .credential-document {
+    padding: 24px 20px 17px;
+  }
+  .credential-document::before {
+    inset: 8px;
+  }
+  .credential-topline img {
+    width: 125px;
+  }
+  .credential-topline > span {
+    font-size: 6px;
+    letter-spacing: 1px;
+  }
+  .credential-topline b {
+    font-size: 10px;
+  }
+  .credential-main {
+    padding: 21px 0 18px;
+  }
+  .credential-bottom {
+    grid-template-columns: 1fr 78px 1fr;
+    gap: 13px;
+  }
+  .credential-emblem {
+    width: 68px;
+    height: 68px;
+  }
+  .credential-emblem-icon {
+    width: 20px;
+    height: 20px;
+  }
+  .credential-emblem span {
+    font-size: 7px;
+  }
+  .credential-emblem small {
+    font-size: 5px;
+  }
+  .credential-bottom strong {
+    font-size: 10px;
+  }
+  .credential-autograph {
+    font-size: 22px;
+  }
+  .credential-bottom span {
+    font-size: 8px;
+  }
+  .credential-reference {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+}
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 10mm;
+  }
+  body * {
+    visibility: hidden;
+  }
+  .issued-certificate,
+  .issued-certificate * {
+    visibility: visible;
+  }
+  .issued-certificate {
+    position: absolute;
+    inset: 0;
+    padding: 0;
+    margin: 0;
+    width: 100%;
+    max-width: none;
+  }
+  .credential-tools,
+  .credential-verify-link {
+    display: none;
+  }
+  .credential-document {
+    padding: 25px 38px 20px;
+    box-shadow: none;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+    break-inside: avoid;
+  }
+  .credential-main {
+    padding: 22px 0;
+  }
+  .credential-document h1 {
+    font-size: 38px;
+    margin: 0 0 16px;
+  }
+  .credential-document h2 {
+    font-size: 36px;
+    margin-top: 10px;
+  }
+  .credential-document h3 {
+    font-size: 21px;
+  }
+  .credential-topline img {
+    width: 150px;
+  }
+  .credential-bottom {
+    grid-template-columns: 1fr 100px 1fr;
+  }
+  .credential-emblem {
+    width: 76px;
+    height: 76px;
+  }
+  .credential-reference {
+    margin-top: 22px;
+  }
+}
