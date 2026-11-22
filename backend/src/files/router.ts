@@ -8,6 +8,11 @@ import { storeFile, downloadFile, destroyFile } from "./storage.js";
 import { validateFile } from "./validation.js";
 import { filePath, fileView, mediaList } from "./service.js";
 import { notifyLearningChange } from "../learning/updates.js";
+import {
+  courseLessons,
+  publishedCourses,
+  requireCourseAccess,
+} from "../learning/progression.js";
 const multipart = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 20 * 1024 * 1024, files: 1, fields: 3, parts: 4 },
@@ -65,25 +70,13 @@ files.post(
     if (input.purpose === "assignment") {
       if (!input.courseId)
         throw new HttpError(400, "Choose a course for this assignment.");
-      const [enrollment, course] = await Promise.all([
-        db.learningRecord.findUnique({
-          where: {
-            userId_kind_key: {
-              userId: session.userId,
-              kind: "enroll",
-              key: "program",
-            },
-          },
-        }),
-        db.course.findFirst({
-          where: { id: input.courseId, status: "published", deletedAt: null },
-        }),
-      ]);
-      if (!enrollment || !course)
+      const courses = await publishedCourses();
+      if (!courses.some(({ id }) => id === input.courseId))
         throw new HttpError(
           403,
           "Enroll in an available course before uploading an assignment.",
         );
+      await requireCourseAccess(session, [input.courseId], courses);
     }
     if (!req.file) throw new HttpError(400, "Choose a file to upload.");
     const validated = await validateFile(req.file, input.purpose);
@@ -126,28 +119,23 @@ files.get("/:id", async (req, res) => {
     where: { id: String(req.params.id) },
   });
   if (!asset) throw new HttpError(404, "File not found.");
-  if (session.user.role === "STUDENT" && asset.ownerId !== session.userId) {
-    if (!["resource", "video"].includes(asset.purpose))
+  if (session.user.role === "STUDENT") {
+    if (["resource", "video"].includes(asset.purpose)) {
+      const courses = await publishedCourses();
+      const path = filePath(asset.id);
+      const linkedIds = courses
+        .filter((course) =>
+          courseLessons(course).some(
+            (lesson) => lesson.resourceUrl === path || lesson.videoUrl === path,
+          ),
+        )
+        .map(({ id }) => id);
+      if (!linkedIds.length)
+        throw new HttpError(403, "This resource is not available.");
+      await requireCourseAccess(session, linkedIds, courses);
+    } else if (asset.ownerId !== session.userId) {
       throw new HttpError(403, "This file is private.");
-    const enrollment = await db.learningRecord.findUnique({
-      where: {
-        userId_kind_key: {
-          userId: session.userId,
-          kind: "enroll",
-          key: "program",
-        },
-      },
-    });
-    if (!enrollment)
-      throw new HttpError(403, "Enroll to access this resource.");
-    const [linked] = await db.$queryRaw<{ found: boolean }[]>`SELECT EXISTS (
-      SELECT 1 FROM mowe_lms.lms_courses c
-      CROSS JOIN LATERAL jsonb_array_elements(c.document->'modules') m
-      CROSS JOIN LATERAL jsonb_array_elements(m->'lessons') l
-      WHERE c.status='published' AND c."deletedAt" IS NULL AND (l->>'resourceUrl'=${filePath(asset.id)} OR l->>'videoUrl'=${filePath(asset.id)})
-    ) AS found`;
-    if (!linked.found)
-      throw new HttpError(403, "This resource is not available.");
+    }
   }
   res.redirect(
     302,

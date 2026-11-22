@@ -40,8 +40,27 @@ model User {
   learning LearningRecord[]
   quizAttempts QuizAttempt[]
   assets FileAsset[]
+  payments Payment[]
   @@schema("mowe_lms")
   @@map("lms_auth_users")
+}
+
+model Payment {
+  reference String @id
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+  title String
+  courseIds String[]
+  amount Int
+  mode String
+  status String @default("pending")
+  checkoutUrl String?
+  createdAt DateTime @default(now())
+  paidAt DateTime?
+  @@index([userId, mode, status])
+  @@index([createdAt])
+  @@schema("mowe_lms")
+  @@map("lms_payments")
 }
 model Session {
   id String @id @default(cuid())

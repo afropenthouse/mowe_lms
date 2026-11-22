@@ -2,7 +2,6 @@
 import {
   BookOpen,
   CheckCircle2,
-  ChevronDown,
   ClipboardCheck,
   FileText,
   PanelLeftClose,
@@ -12,6 +11,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { Course } from "../../lib/types";
+import type { CourseActivity } from "../../lib/courseActivity";
 import { lessons } from "../../lib/curriculum";
 export function useCourseOutline() {
   const [open, setOpen] = useState(false);
@@ -64,6 +64,7 @@ export default function CourseOutline({
   course,
   completed,
   activeId,
+  activity,
   open,
   onClose,
   onLesson,
@@ -74,6 +75,7 @@ export default function CourseOutline({
   course: Course;
   completed: Set<string>;
   activeId?: string;
+  activity?: CourseActivity;
   open: boolean;
   onClose: () => void;
   onLesson: (id: string) => void;
@@ -87,6 +89,13 @@ export default function CourseOutline({
     close = useRef<HTMLButtonElement>(null);
   const all = lessons(course),
     done = all.filter((l) => completed.has(l.id)).length;
+  const search = query.trim().toLowerCase();
+  const visibleLessons = all
+    .map((lesson, index) => ({ lesson, number: index + 1 }))
+    .filter(({ lesson }) => lesson.title.toLowerCase().includes(search));
+  const quizActive = activity === "assessment";
+  const assignmentActive = activity === "assignment";
+  const currentLessonId = quizActive || assignmentActive ? undefined : activeId;
   useEffect(() => {
     const media = window.matchMedia("(max-width: 1099px)");
     const update = () => setMobile(media.matches);
@@ -195,100 +204,70 @@ export default function CourseOutline({
             className={
               !activeId ? "outline-overview active" : "outline-overview"
             }
+            aria-current={!activeId ? "page" : undefined}
             onClick={() => choose(onOverview)}
           >
             <BookOpen size={17} />
             Course overview
           </button>
-          {course.modules.map((module, index) => {
-            const matching = module.title
-              .toLowerCase()
-              .includes(query.toLowerCase());
-            const visible = module.lessons.filter(
-              (l) =>
-                matching || l.title.toLowerCase().includes(query.toLowerCase()),
-            );
-            if (!visible.length) return null;
-            return (
-              <details
-                className="outline-module"
-                key={module.id}
-                open={
-                  !!query ||
-                  module.lessons.some((l) => l.id === activeId) ||
-                  (!activeId && index === 0)
-                }
-              >
-                <summary>
-                  <span>
-                    <small>
-                      MODULE {String(index + 1).padStart(2, "0")} ·{" "}
-                      {module.lessons.length} LESSONS
-                    </small>
-                    <strong>{module.title}</strong>
+          <ol className="outline-lesson-list" aria-label="Lessons">
+            {visibleLessons.map(({ lesson: l, number }) => (
+              <li key={l.id}>
+                <button
+                  type="button"
+                  className={
+                    l.id === currentLessonId
+                      ? "outline-lesson active"
+                      : "outline-lesson"
+                  }
+                  aria-current={l.id === currentLessonId ? "step" : undefined}
+                  disabled={l.placeholder}
+                  onClick={() => choose(() => onLesson(l.id))}
+                >
+                  <span className="outline-lesson-number" aria-hidden="true">
+                    {number}
                   </span>
-                  <ChevronDown size={16} />
-                </summary>
-                {visible.map((l) => (
-                  <button
-                    key={l.id}
-                    className={
-                      l.id === activeId
-                        ? "outline-lesson active"
-                        : "outline-lesson"
-                    }
-                    aria-current={l.id === activeId ? "step" : undefined}
-                    onClick={() => choose(() => onLesson(l.id))}
-                  >
-                    {completed.has(l.id) ? (
-                      <CheckCircle2 size={17} />
-                    ) : (
-                      <span className="outline-lesson-number">
-                        {module.lessons.findIndex((item) => item.id === l.id) +
-                          1}
-                      </span>
-                    )}
-                    <span>
-                      {l.title}
+                  <span>
+                    {l.title}
+                    {completed.has(l.id) && (
                       <small>
-                        {l.duration} min ·{" "}
-                        {completed.has(l.id) ? "Completed" : "Text & practice"}
+                        <CheckCircle2 size={12} /> Completed
                       </small>
-                    </span>
-                  </button>
-                ))}
-              </details>
-            );
-          })}
-          {query &&
-            !all.some((l) =>
-              l.title.toLowerCase().includes(query.toLowerCase()),
-            ) &&
-            !course.modules.some((m) =>
-              m.title.toLowerCase().includes(query.toLowerCase()),
-            ) && (
-              <p className="outline-no-results">
-                No lessons match your search.
-              </p>
-            )}
+                    )}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ol>
+          {search && visibleLessons.length === 0 && (
+            <p className="outline-no-results">No lessons match your search.</p>
+          )}
           {onAssessment && (
             <button
-              className="outline-activity"
+              className={
+                quizActive ? "outline-activity active" : "outline-activity"
+              }
+              aria-current={quizActive ? "step" : undefined}
               onClick={() => choose(onAssessment)}
             >
               <ClipboardCheck size={18} />
               <span>
                 Course quiz
                 <small>
-                  {course.quiz.questions.length} questions ·{" "}
-                  {course.quiz.passScore}% to pass
+                  {course.questionCount ?? course.quiz.questions.length}{" "}
+                  questions · {course.quiz.passScore}% to pass
                 </small>
               </span>
             </button>
           )}
           {onAssignment && (
             <button
-              className="outline-activity"
+              className={
+                assignmentActive
+                  ? "outline-activity active"
+                  : "outline-activity"
+              }
+              aria-current={assignmentActive ? "step" : undefined}
               onClick={() => choose(onAssignment)}
             >
               <FileText size={18} />

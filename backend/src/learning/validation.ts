@@ -66,6 +66,10 @@ export const courseSchema = z
                     content: z.string().max(100000),
                     videoUrl: link,
                     resourceUrl: link,
+                    embedUrl: z
+                      .string()
+                      .regex(/^https:\/\/view\.genially\.com\/[a-f0-9]{24}$/)
+                      .optional(),
                     placeholder: z.boolean(),
                   })
                   .strict(),
@@ -119,7 +123,7 @@ export const courseSchema = z
         m.lessons.some(
           (l) =>
             l.placeholder ||
-            !l.content.trim() ||
+            (!l.content.trim() && !l.embedUrl) ||
             (l.type === "video" && !l.videoUrl),
         ),
       )

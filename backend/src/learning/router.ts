@@ -10,10 +10,9 @@ import {
 import {
   gradeAssessment,
   publicAssessment,
-  withoutAnswers,
   type Assessment,
 } from "./assessment.js";
-import { program } from "../content/curriculum.js";
+import { curriculum, program } from "../content/curriculum.js";
 import type { Prisma } from "../generated/prisma/client.js";
 import { getOverview } from "./overview.js";
 import { learningRevision, notifyLearningChange } from "./updates.js";
@@ -25,6 +24,16 @@ import {
   certificateView,
   issueCertificate,
 } from "./certificates.js";
+import {
+  courseForLearner,
+  courseLessons,
+  courseProgression,
+  orderedCourses,
+  publishedCourses,
+  requireCourseAccess,
+} from "./progression.js";
+import { paidCourses, paymentsRequired } from "../payments/access.js";
+import { config } from "../config.js";
 const json = (value: unknown) => value as Prisma.InputJsonValue;
 const object = (value: unknown) => value as Record<string, any>;
 const defaults = {
@@ -47,16 +56,6 @@ async function published(id: string) {
   });
   if (!row) throw new HttpError(404, "This course is not available.");
   return row.document as unknown as CourseDocument;
-}
-async function enrolled(userId: string) {
-  const row = await db.learningRecord.findUnique({
-    where: { userId_kind_key: { userId, kind: "enroll", key: "program" } },
-  });
-  if (!row)
-    throw new HttpError(
-      403,
-      "Join the programme before starting this activity.",
-    );
 }
 function attemptView(a: {
   id: string;
@@ -128,15 +127,16 @@ learning.get("/state", async (req, res) => {
     db.academySetting.findUnique({ where: { id: "program" } }),
     learningRevision(session?.userId, isAdmin),
   ]);
-  const courses = rows.map((row) => {
-    const c = row.document as unknown as CourseDocument;
-    return isAdmin ? c : withoutAnswers(c);
-  });
+  const documents = rows.map(
+    (row) => row.document as unknown as CourseDocument,
+  );
+  const courses = isAdmin ? documents : orderedCourses(documents);
   const state: Record<string, any> = {
     revision,
-    courses,
     program,
     settings: setting?.document || defaults,
+    paymentsRequired,
+    openCourseAccess: config.OPEN_COURSE_ACCESS,
     enrolled: false,
     progress: [],
     attempts: [],
@@ -161,7 +161,10 @@ learning.get("/state", async (req, res) => {
         orderBy: { startedAt: "asc" },
       }),
     ]);
-    state.enrolled = records.some((r) => r.kind === "enroll");
+    const enrollment = records.find(
+      (r) => r.kind === "enroll" && r.key === "program",
+    );
+    state.enrolled = Boolean(enrollment);
     if (!isAdmin)
       state.notificationUnread = await db.learningRecord.count({
         where: {
@@ -174,6 +177,16 @@ learning.get("/state", async (req, res) => {
       .filter((r) => r.kind === "certificate")
       .map(certificateView);
     state.certificateSettings = await certificateSettings();
+    if (!isAdmin) {
+      const access = courseProgression(
+        courses,
+        records,
+        attempts,
+        state.certificateSettings.requireAssignments,
+        await paidCourses(session.userId),
+      );
+      state.courseAccess = access;
+    }
     state.saved = records
       .filter((r) => r.kind === "bookmark")
       .map((r) => r.key);
@@ -210,9 +223,39 @@ learning.get("/state", async (req, res) => {
           : null,
       }));
     }
-    state.attempts = attempts.map((a) => attemptView(a));
+    const availableIds = courses
+      .filter(
+        ({ id }) =>
+          isAdmin ||
+          (state.enrolled &&
+            ["available", "completed"].includes(state.courseAccess[id].status)),
+      )
+      .map(({ id }) => id);
+    const programAvailable =
+      state.enrolled &&
+      courses.length > 0 &&
+      courses.every(
+        ({ id }) => state.courseAccess?.[id]?.status === "completed",
+      );
+    state.attempts = attempts
+      .filter(
+        ({ courseId }) =>
+          isAdmin ||
+          availableIds.includes(courseId) ||
+          (courseId === "program" && programAvailable),
+      )
+      .map(attemptView);
     const comments = await db.learningRecord.findMany({
-      where: { kind: "comment" },
+      where: {
+        kind: "comment",
+        ...(isAdmin
+          ? {}
+          : {
+              OR: availableIds.map((id) => ({
+                document: { path: ["course_id"], equals: id },
+              })),
+            }),
+      },
       orderBy: { updatedAt: "desc" },
       take: 100,
     });
@@ -229,6 +272,17 @@ learning.get("/state", async (req, res) => {
       overview,
     };
   }
+  state.courses = isAdmin
+    ? courses
+    : courses.map((course) =>
+        courseForLearner(
+          course,
+          state.enrolled &&
+            ["available", "completed"].includes(
+              state.courseAccess[course.id].status,
+            ),
+        ),
+      );
   res.json(state);
 });
 learning.use(csrf);
@@ -271,8 +325,13 @@ learning.post("/actions", async (req, res) => {
   const userId = session.userId;
   let affectedUser = userId;
   const now = new Date().toISOString();
-  async function record(kind: string, key: string, document: unknown) {
-    return db.learningRecord.upsert({
+  async function record(
+    kind: string,
+    key: string,
+    document: unknown,
+    client: Prisma.TransactionClient = db,
+  ) {
+    return client.learningRecord.upsert({
       where: { userId_kind_key: { userId, kind, key } },
       create: { userId, kind, key, document: json(document) },
       update: { document: json(document) },
@@ -290,27 +349,19 @@ learning.post("/actions", async (req, res) => {
   )
     await admin(req);
   if (action === "saveCourse") {
-    const c = courseSchema.parse(p.course);
+    const input = object(p.course);
+    const source = curriculum.find(({ id }) => id === input?.id);
+    const c = courseSchema.parse(
+      source ? { ...input, modules: source.modules } : input,
+    );
     await validateCourseFiles(c);
     await db.$transaction(async (tx) => {
       const old = await tx.course.findUnique({ where: { id: c.id } });
       if (!old) {
-        if (c.version !== 0)
-          throw new HttpError(
-            409,
-            "This course was removed. Reload before editing.",
-          );
-        const next = { ...c, version: 1 };
-        await tx.course.create({
-          data: {
-            id: c.id,
-            title: c.title,
-            status: c.status,
-            position: c.order,
-            version: 1,
-            document: json(next),
-          },
-        });
+        throw new HttpError(
+          403,
+          "New courses are added through the curriculum import.",
+        );
       } else {
         const next = { ...c, version: c.version + 1 };
         const changed = await tx.course.updateMany({
@@ -359,6 +410,9 @@ learning.post("/actions", async (req, res) => {
       if (!current) throw new HttpError(404, "Course not found.");
       const c = courseSchema.parse({
         ...object(saved.document),
+        modules:
+          curriculum.find(({ id }) => id === saved.courseId)?.modules ??
+          object(saved.document).modules,
         status: "draft",
         version: current.version + 1,
       });
@@ -386,12 +440,26 @@ learning.post("/actions", async (req, res) => {
       update: { document: value },
     });
   } else if (action === "enroll") {
+    if (paymentsRequired && session.user.role === "STUDENT")
+      throw new HttpError(
+        403,
+        "Choose a payment option to begin learning.",
+        "PAYMENT_REQUIRED",
+      );
     const settings = await db.academySetting.findUnique({
       where: { id: "program" },
     });
-    if (settings && object(settings.document).enrollmentOpen === false)
+    if (
+      !config.OPEN_COURSE_ACCESS &&
+      settings &&
+      object(settings.document).enrollmentOpen === false
+    )
       throw new HttpError(403, "Enrollment is currently closed.");
-    if (settings && Number(object(settings.document).price) > 0)
+    if (
+      !config.OPEN_COURSE_ACCESS &&
+      settings &&
+      Number(object(settings.document).price) > 0
+    )
       throw new HttpError(
         409,
         "Paid enrollment will be available when checkout is configured.",
@@ -409,7 +477,6 @@ learning.post("/actions", async (req, res) => {
         where: { userId, kind: "bookmark", key: input.courseId },
       });
   } else if (action === "progress") {
-    await enrolled(userId);
     const input = z
       .object({
         lessonId: z.string(),
@@ -419,52 +486,55 @@ learning.post("/actions", async (req, res) => {
       })
       .strict()
       .parse(p);
-    const courses = await db.course.findMany({
-      where: { status: "published", deletedAt: null },
-    });
-    const lesson = courses
-      .flatMap((c) =>
-        (c.document as unknown as CourseDocument).modules.flatMap(
-          (m) => m.lessons,
-        ),
-      )
-      .find((l) => l.id === input.lessonId);
-    if (!lesson || lesson.placeholder)
-      throw new HttpError(400, "This lesson is not ready.");
-    const previous = await db.learningRecord.findUnique({
-      where: {
-        userId_kind_key: { userId, kind: "progress", key: input.lessonId },
-      },
-    });
-    const old = previous ? object(previous.document) : {};
-    await record("progress", input.lessonId, {
-      completed: input.completed || old.completed ? 1 : 0,
-      note: input.note ?? old.note ?? "",
-      seconds: input.seconds ?? old.seconds ?? 0,
-      updated: now,
+    const courses = await publishedCourses();
+    const course = courses.find((entry) =>
+      courseLessons(entry).some(
+        (lesson) => lesson.id === input.lessonId && !lesson.placeholder,
+      ),
+    );
+    if (!course) throw new HttpError(400, "This lesson is not ready.");
+    await db.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM mowe_lms.lms_auth_users WHERE id = ${userId} FOR UPDATE`;
+      await requireCourseAccess(session, [course.id], courses, tx);
+      const previous = await tx.learningRecord.findUnique({
+        where: {
+          userId_kind_key: { userId, kind: "progress", key: input.lessonId },
+        },
+      });
+      const old = previous ? object(previous.document) : {};
+      await record(
+        "progress",
+        input.lessonId,
+        {
+          completed: input.completed || old.completed ? 1 : 0,
+          note: input.note ?? old.note ?? "",
+          seconds: input.seconds ?? old.seconds ?? 0,
+          updated: now,
+        },
+        tx,
+      );
     });
   } else if (action === "quizStart") {
-    await enrolled(userId);
     const { courseId } = z.object({ courseId: z.string() }).parse(p);
+    const courses = await publishedCourses();
     let quiz: Assessment;
     if (courseId === "program") {
-      const courses = await db.course.findMany({
-        where: { status: "published", deletedAt: null },
-        orderBy: { position: "asc" },
-      });
       if (!courses.length)
         throw new HttpError(400, "No assessments are available.");
       quiz = {
         passScore: 70,
         attemptLimit: 3,
         timeLimit: 30,
-        questions: courses.flatMap(
-          (c) => (c.document as unknown as CourseDocument).quiz.questions,
-        ),
+        questions: courses.flatMap((c) => c.quiz.questions),
       };
-    } else quiz = (await published(courseId)).quiz;
+    } else {
+      const course = courses.find((c) => c.id === courseId);
+      if (!course) throw new HttpError(404, "This course is not available.");
+      quiz = course.quiz;
+    }
     const attempt = await db.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT id FROM mowe_lms.lms_auth_users WHERE id = ${userId} FOR UPDATE`;
+      await requireCourseAccess(session, [courseId], courses, tx);
       const attempts = await tx.quizAttempt.findMany({
         where: { userId, courseId },
         orderBy: { startedAt: "desc" },
@@ -509,6 +579,13 @@ learning.post("/actions", async (req, res) => {
         throw new HttpError(404, "Assessment not found.");
       if (a.status !== "started")
         throw new HttpError(409, "This assessment was already submitted.");
+      if (session.user.role === "STUDENT")
+        await requireCourseAccess(
+          session,
+          [a.courseId],
+          await publishedCourses(tx),
+          tx,
+        );
       const quiz = a.assessment as Assessment;
       const expired =
         quiz.timeLimit > 0 &&
@@ -530,7 +607,6 @@ learning.post("/actions", async (req, res) => {
     res.json(result);
     return;
   } else if (action === "assignment") {
-    await enrolled(userId);
     const input = z
       .object({
         courseId: z.string(),
@@ -539,7 +615,10 @@ learning.post("/actions", async (req, res) => {
       })
       .strict()
       .parse(p);
-    await published(input.courseId);
+    const courses = await publishedCourses();
+    if (!courses.some(({ id }) => id === input.courseId))
+      throw new HttpError(404, "This course is not available.");
+    await requireCourseAccess(session, [input.courseId], courses);
     if (input.content.length < 20 && !input.file)
       throw new HttpError(
         400,
@@ -624,7 +703,6 @@ learning.post("/actions", async (req, res) => {
     if (!changed.count)
       throw new HttpError(404, "Pending assessment not found.");
   } else if (action === "comment") {
-    await enrolled(userId);
     const input = z
       .object({
         courseId: z.string(),
@@ -632,7 +710,10 @@ learning.post("/actions", async (req, res) => {
       })
       .strict()
       .parse(p);
-    await published(input.courseId);
+    const courses = await publishedCourses();
+    if (!courses.some(({ id }) => id === input.courseId))
+      throw new HttpError(404, "This course is not available.");
+    await requireCourseAccess(session, [input.courseId], courses);
     await record("comment", crypto.randomUUID(), {
       course_id: input.courseId,
       name: session.user.name,

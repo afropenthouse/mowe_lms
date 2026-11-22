@@ -48,13 +48,13 @@ Courses, content history, enrollment, notes, progress, quiz attempts, written as
 
 ## Curriculum and branding
 
-The supplied CBA outline is expanded into three courses, 11 modules with 33 lessons, 30 multiple-choice questions with explanations, and three workplace assignments with review criteria. Each module combines core teaching, a worked case study and a practical workshop. Each course starts with a 70% pass mark, three quiz attempts and no time limit; admins can adjust these. The programme final assessment combines the published question banks. Course text is original draft teaching material for academy review and can be edited in `/admin/courses`.
+The CBA program contains eight sequential courses and 27 interactive Genially lessons. Each course includes a quiz and a workplace assignment. Administrators can manage existing course assessments in `/admin/courses`. The optional program assessment combines the published course question banks.
 
 The learner course pages include a searchable outline that can be opened or closed, lesson previews, progress, and direct links to quizzes and assignments. On mobile the outline becomes a drawer with keyboard focus handling and Escape dismissal.
 
 The course builder provides inline module/lesson deletion and Undo, including the final item. Empty courses, modules and assessments can be saved as drafts; publishing requires at least one module, a complete lesson in every module and at least one quiz question. Save the draft or publish to persist structure edits. Shared colour tokens keep text, borders and status colours consistent across learner, admin and auth pages.
 
-After configuring the backend database, run `npm run db:migrate` and `npm run db:seed` in `backend`. Seeding inserts missing course IDs and preserves existing admin edits. See [content notes](backend/src/content/README.md).
+After configuring the backend database, run `npm run db:migrate` and `npm run db:seed` in `backend`. Developers use this import to add courses and publish the workbook lesson order. See [content notes](backend/src/content/README.md).
 
 Brand tokens were checked against the live `moweglobal.com` stylesheet: Afacad / Afacad Flux, vermilion `#c8281b`, navy `#0f2a52`, rounded buttons, and corporate photography. The original logo and workshop photo are sourced from that site; the classroom photo is stock photography. No student testimonial or outcome statistics are invented.
 

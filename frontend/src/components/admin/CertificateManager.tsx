@@ -25,13 +25,6 @@ type Learner = {
   name: string;
   email: string;
   studentNumber: string | null;
-  completedLessons: number;
-  totalLessons: number;
-  passedQuizzes: number;
-  totalQuizzes: number;
-  gradedAssignments: number;
-  totalAssignments: number;
-  finalPassed: boolean;
   status: "eligible" | "issued" | "in-progress";
   certificateId: string | null;
   issuedAt: string | null;
@@ -138,10 +131,6 @@ export default function CertificateManager() {
           <strong>{data?.summary.eligible ?? "—"}</strong>
         </div>
         <div>
-          <span>Learning in progress</span>
-          <strong>{data?.summary.inProgress ?? "—"}</strong>
-        </div>
-        <div>
           <span>Certificate fee</span>
           <strong>Free</strong>
           <small>No payment required</small>
@@ -175,8 +164,8 @@ export default function CertificateManager() {
           <div>
             <h2>Completion register</h2>
             <p>
-              Enrolled learners, completion requirements and issued
-              certificates.
+              Complete all eight courses and score at least 70% in every course
+              quiz to qualify.
             </p>
           </div>
           <span className="status published">Free certificates</span>
@@ -202,7 +191,7 @@ export default function CertificateManager() {
             <option value="all">All enrolled learners</option>
             <option value="eligible">Ready to issue</option>
             <option value="issued">Certificate issued</option>
-            <option value="in-progress">In progress</option>
+            <option value="in-progress">Awaiting completion</option>
           </select>
         </div>
         {loading && !data ? (
@@ -218,7 +207,6 @@ export default function CertificateManager() {
                   <thead>
                     <tr>
                       <th>Learner</th>
-                      <th>Requirements</th>
                       <th>Status</th>
                       <th>Certificate</th>
                     </tr>
@@ -233,24 +221,6 @@ export default function CertificateManager() {
                           </small>
                         </td>
                         <td>
-                          <span>
-                            {l.completedLessons}/{l.totalLessons} lessons ·{" "}
-                            {l.passedQuizzes}/{l.totalQuizzes} quizzes
-                          </span>
-                          {data.settings.requireAssignments && (
-                            <small>
-                              {l.gradedAssignments}/{l.totalAssignments}{" "}
-                              assignments graded
-                            </small>
-                          )}
-                          {data.settings.requireFinalAssessment && (
-                            <small>
-                              Final assessment:{" "}
-                              {l.finalPassed ? "Passed" : "Pending"}
-                            </small>
-                          )}
-                        </td>
-                        <td>
                           <span
                             className={`library-status ${l.status === "in-progress" ? "draft" : "published"}`}
                           >
@@ -258,7 +228,7 @@ export default function CertificateManager() {
                               ? "Issued"
                               : l.status === "eligible"
                                 ? "Ready to issue"
-                                : "In progress"}
+                                : "Awaiting completion"}
                           </span>
                         </td>
                         <td>
@@ -382,8 +352,9 @@ export default function CertificateManager() {
                 <div className="certificate-rules">
                   <strong>Completion requirements</strong>
                   <p>
-                    Every lesson in the published courses must be completed and
-                    every course quiz passed.
+                    Complete all eight courses and score at least 70% in every
+                    course quiz. A quiz with a higher pass mark must meet that
+                    higher mark.
                   </p>
                   <label>
                     <input

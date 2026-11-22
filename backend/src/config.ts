@@ -11,11 +11,22 @@ const parsed = z
     AUTH_SECRET: z.string().min(64),
     SMTP_HOST: z.string().min(1),
     SMTP_PORT: z.coerce.number().default(465),
+    SMTP_SECURE: z.stringbool().optional(),
     SMTP_USER: z.string().email(),
     SMTP_PASS: z.string().min(1),
     MAIL_FROM: z.string().min(1),
     MAIL_DRIVER: z.enum(["smtp", "test"]).default("smtp"),
     TRUST_PROXY: z.enum(["0", "1"]).default("0"),
+    PAYMENTS_REQUIRED: z.stringbool().optional(),
+    OPEN_COURSE_ACCESS: z.stringbool().default(true),
+    PAYSTACK_SECRET_KEY: z
+      .string()
+      .regex(/^sk_(test|live)_\S+$/)
+      .optional(),
+    PAYSTACK_WEBHOOK_SECRET: z
+      .string()
+      .regex(/^whsec_\S+$/)
+      .optional(),
     CLOUDINARY_CLOUD_NAME: z.string().min(1).optional(),
     CLOUDINARY_API_KEY: z.string().min(1).optional(),
     CLOUDINARY_API_SECRET: z.string().min(1).optional(),

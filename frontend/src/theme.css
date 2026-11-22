@@ -3,26 +3,92 @@ html[data-theme="light"] {
 }
 html[data-theme="dark"] {
   color-scheme: dark;
-  --ink: #e7edf6;
-  --heading: #eef3fc;
-  --text-strong: #d9e4f3;
-  --muted: #b0bfd3;
-  --subtle: #98aac1;
-  --line: #2c3e55;
-  --paper: #0c1625;
-  --body-bg: #0c1625;
-  --surface: #142235;
-  --surface-muted: #192b42;
-  --surface-hover: #20354f;
-  --input-border: #415773;
-  --active-bg: #36262e;
-  --active-border: #a96258;
-  --accent-text: #ff9684;
-  --success: #8addac;
-  --success-bg: #173c2d;
-  --warning: #f0ca89;
-  --warning-bg: #3c3020;
-  scrollbar-color: #425772 var(--paper);
+  --ink: #e3e8ef;
+  --heading: #f3f5f9;
+  --text-strong: #dce3ed;
+  --muted: #b3bdcc;
+  --subtle: #9daabd;
+  --line: #303a49;
+  --paper: #10151e;
+  --body-bg: #10151e;
+  --surface: #1a222e;
+  --surface-muted: #202a37;
+  --surface-hover: #283444;
+  --input-border: #4c5b70;
+  --active-bg: #38282c;
+  --active-border: #9e655f;
+  --accent-text: #ffab9c;
+  --success: #96d9b2;
+  --success-bg: #1b352a;
+  --warning: #efd09a;
+  --warning-bg: #3b3021;
+  scrollbar-color: #526075 var(--body-bg);
+  accent-color: var(--accent-text);
+}
+html[data-theme="dark"] :is(.sidebar, .app-header) {
+  background: #151c26;
+}
+html[data-theme="dark"] .overview-metric {
+  box-shadow: 0 3px 12px #00000012;
+}
+html[data-theme="dark"] .avatar {
+  background: #344358;
+  color: #e3eaf4;
+  border-color: #4c5b70;
+}
+html[data-theme="dark"] :is(input, textarea, select) {
+  caret-color: var(--heading);
+}
+html[data-theme="dark"] input:autofill {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 0 0 1000px var(--surface) inset;
+}
+html[data-theme="dark"] input:-webkit-autofill,
+html[data-theme="dark"] input:-webkit-autofill:hover,
+html[data-theme="dark"] input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--ink);
+  -webkit-box-shadow: 0 0 0 1000px var(--surface) inset;
+  caret-color: var(--heading);
+}
+html[data-theme="dark"] .auth-input {
+  border-color: var(--input-border);
+}
+html[data-theme="dark"] .auth-input input {
+  border-radius: 0;
+}
+html[data-theme="dark"] .auth-input:focus-within {
+  border-color: #8293ad;
+}
+html[data-theme="dark"] .auth-input input:autofill {
+  background: var(--surface);
+}
+html[data-theme="dark"] input:is([type="checkbox"], [type="radio"]) {
+  accent-color: var(--accent-text);
+}
+html[data-theme="dark"] ::selection {
+  color: #f3f5f9;
+  background: #365574;
+}
+html[data-theme="dark"] ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+html[data-theme="dark"] ::-webkit-scrollbar-track {
+  background: transparent;
+}
+html[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: #526075;
+  border: 2px solid var(--body-bg);
+  border-radius: 8px;
+}
+html[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: #6b7c94;
+}
+html[data-theme="dark"] ::-webkit-scrollbar-button {
+  width: 0;
+  height: 0;
+  display: none;
 }
 .theme-toggle {
   display: inline-flex;
@@ -119,8 +185,8 @@ html[data-theme="dark"] .builder-delete:not(:disabled):hover {
 }
 html[data-theme="dark"] .outline-toggle:hover,
 html[data-theme="dark"] .outline-lesson:not(.active):hover,
-html[data-theme="dark"] .outline-overview:hover,
-html[data-theme="dark"] .outline-activity:hover {
+html[data-theme="dark"] .outline-overview:not(.active):hover,
+html[data-theme="dark"] .outline-activity:not(.active):hover {
   background: var(--surface-hover);
 }
 html[data-theme="dark"] .btn.secondary:hover {

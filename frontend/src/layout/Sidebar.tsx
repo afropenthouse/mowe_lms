@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronDown, LogOut } from "lucide-react";
+import { myCoursesPath } from "../lib/publicNavigation";
 import { useAcademy } from "../providers/AcademyProvider";
 
 export default function Sidebar() {
@@ -62,8 +63,8 @@ export default function Sidebar() {
               >
                 <Icon size={20} />
                 {label}
-                {p === "/courses" && (
-                  <span className="nav-count">{courses.length}</span>
+                {p === myCoursesPath && (
+                  <span className="nav-count">{courses.length + 1}</span>
                 )}
               </Link>
             ))}

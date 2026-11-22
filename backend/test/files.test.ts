@@ -141,7 +141,7 @@ test(
       anonymous = await client();
     const course = structuredClone(curriculum[0]);
     course.id = courseId;
-    course.version = 0;
+    course.version = 1;
     course.title = "Upload integration test";
     course.modules = course.modules.slice(0, 1);
     course.modules[0].id = randomUUID();
@@ -174,8 +174,16 @@ test(
     }
     try {
       const before = await overview();
-      await admin.action("saveCourse", { course });
-      course.version++;
+      await db.course.create({
+        data: {
+          id: course.id,
+          title: course.title,
+          status: course.status,
+          position: course.order,
+          document: course,
+          version: course.version,
+        },
+      });
       await t.test(
         "administrator-only upload and file signature enforcement",
         async () => {

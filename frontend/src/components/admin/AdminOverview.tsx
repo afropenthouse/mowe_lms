@@ -140,8 +140,8 @@ export default function AdminOverview({
             <BookOpen size={28} />
             <h3>No published courses</h3>
             <p>Publish a course to begin tracking learner progress.</p>
-            <Link href="/admin/courses/new">
-              Create course
+            <Link href="/admin/courses">
+              Open content library
               <ArrowRight size={15} />
             </Link>
           </div>

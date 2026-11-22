@@ -14,6 +14,8 @@ import "../profile.css";
 import "../people.css";
 import "../certificates.css";
 import "../announcements.css";
+import "../public-pages.css";
+import "../payments.css";
 export const metadata: Metadata = {
   title: {
     default: "MOWE Academy | Certified Business Administrator",

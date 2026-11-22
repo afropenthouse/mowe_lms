@@ -1,13 +1,10 @@
 # CBA curriculum
 
-The active catalogue contains Business Fundamentals & Corporate Structure, Financial Literacy for Professionals, and Marketing and Customer Relationship Management, with 11 sections. Each section now has three lessons: core teaching, a worked case study and a practical workshop, giving 33 lessons in total. Lessons include objectives, teaching notes, workplace examples, practice activities and takeaways. Each course has ten scenario/concept/calculation questions with explanations and one assignment with review criteria. Content is intended for early-career professionals with 2–5 years of experience.
+The developer-maintained catalogue contains courses 1–8 and 27 Genially presentations in the workbook order. Presentation titles and IDs are defined in `interactive-lessons.ts`. Each course includes its existing quiz and workplace assignment.
 
-`curriculum.ts` exports the expanded seed catalogue. Run `npm run db:seed` after `npm run db:migrate`. Missing courses are inserted; archived courses remain archived. A one-time expansion adds the new case/workshop lessons to existing modules while preserving existing lesson IDs, content edits, course details and quizzes. It saves history and records an installation receipt. Later seed reruns do not reinstall lessons an admin removes. Removed modules are not recreated. Edit the database-backed material through `/admin/courses`; seed source changes do not automatically replace saved content.
+Run `npm run db:migrate` and then `npm run db:seed` in the backend before deploying the catalogue. The import publishes the eight courses, uses the original core lesson IDs, and retains existing quizzes, assignments and matching lesson data. Earlier versions of the curriculum are saved in course history. Importing again applies the code-defined lesson titles, links and order.
 
-Course documents are validated before saving. A saved draft withdraws that course from learner visibility until published again. History snapshots preserve prior versions; restoring creates a draft. Concurrent edits return a conflict instead of silently overwriting a newer version. Active quiz attempts retain their own assessment snapshot.
-
-The material is an expanded teaching draft for the academy to review. It does not claim external accreditation or invent videos, faculty credentials or outcome statistics. Financial examples are fictional. Tax lessons cover process and records rather than fixed rates or deadlines, which need current professional confirmation.
-
+Learners can currently join for free and open any course or lesson. To restore sequential learning and the configured checkout rules, set `OPEN_COURSE_ACCESS=false` and restart the backend. Checkout pricing defaults to ₦100,000 per course or ₦280,000 for all eight, and administrators can edit prices in Payments.
 ## Further reading checked during authoring
 
 - [Corporate Affairs Commission: business names](https://www.cac.gov.ng/services/business-name) — official registration resource.

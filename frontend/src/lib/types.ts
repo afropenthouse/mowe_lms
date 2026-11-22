@@ -6,6 +6,7 @@ export type Lesson = {
   content: string;
   videoUrl: string;
   resourceUrl: string;
+  embedUrl?: string;
   placeholder: boolean;
 };
 export type Question = {
@@ -25,6 +26,8 @@ export type Course = {
   version: number;
   difficulty: string;
   instructor: string;
+  questionCount?: number;
+  hasAssignment?: boolean;
   modules: { id: string; title: string; lessons: Lesson[] }[];
   quiz: {
     passScore: number;
@@ -34,3 +37,13 @@ export type Course = {
   };
   assignment: { title: string; prompt: string };
 };
+
+export type CourseAccess =
+  | { status: "locked"; prerequisiteId: string }
+  | { status: "payment_required" }
+  | { status: "completed" }
+  | {
+      status: "available";
+      lessonId: string;
+      activity: "lesson" | "assessment" | "assignment";
+    };

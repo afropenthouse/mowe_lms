@@ -6,8 +6,9 @@ import Link from "next/link";
 import { Button } from "../components/ui";
 import { useAcademy } from "../providers/AcademyProvider";
 import ThemeToggle from "../components/ThemeToggle";
+import { publicNavigation } from "../lib/publicNavigation";
 export default function PublicHeader() {
-  const { user, go, enroll } = useAcademy();
+  const { user, go, enroll, path } = useAcademy();
   return (
     <header className="public-header">
       <Link href="/" className="brand">
@@ -20,10 +21,16 @@ export default function PublicHeader() {
         />
         <span>ACADEMY</span>
       </Link>
-      <nav>
-        <Link href="/#program">The program</Link>
-        <Link href="/courses">Our courses</Link>
-        <Link href="/#approach">How it works</Link>
+      <nav aria-label="Academy">
+        {publicNavigation.map(({ href, label }) => (
+          <Link
+            key={href}
+            href={href}
+            aria-current={path === href ? "page" : undefined}
+          >
+            {label}
+          </Link>
+        ))}
       </nav>
       <div className="header-actions">
         <ThemeToggle />

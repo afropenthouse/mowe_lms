@@ -2,6 +2,8 @@ import { z } from "zod";
 import { db } from "../db.js";
 import { HttpError } from "../http.js";
 import type { Prisma } from "../generated/prisma/client.js";
+import { paymentMode, paymentsRequired } from "../payments/access.js";
+import { programCourseIds } from "../content/curriculum.js";
 
 export const certificateSettingsSchema = z
   .object({
@@ -73,24 +75,32 @@ export async function certificateRegister(
     ), totals AS (
       SELECT (SELECT count(*)::int FROM lessons) AS lessons,
         (SELECT count(*)::int FROM courses) AS quizzes,
+        (SELECT count(*)::int FROM courses WHERE id=ANY(${programCourseIds}::text[]))=${programCourseIds.length} AS "allCoursesAvailable",
         (SELECT count(*)::int FROM courses WHERE length(trim(document->'assignment'->>'prompt'))>0) AS assignments
     ), details AS (
       SELECT u.id,u.name,u.email,u."studentNumber",t.lessons AS "totalLessons",t.quizzes AS "totalQuizzes",t.assignments AS "totalAssignments",
         u."emailVerifiedAt" IS NOT NULL AND u."suspendedAt" IS NULL AS active,
+        (NOT ${paymentsRequired} OR NOT EXISTS (
+          SELECT 1 FROM courses c WHERE NOT EXISTS (
+            SELECT 1 FROM mowe_lms.lms_payments p WHERE p."userId"=u.id
+              AND p.mode=${paymentMode} AND p.status='paid' AND c.id=ANY(p."courseIds")
+          )
+        )) AS covered,
         (SELECT count(*)::int FROM mowe_lms.lms_learning_records r JOIN lessons l ON l.id=r.key
           WHERE r."userId"=u.id AND r.kind='progress' AND r.document->>'completed' IN ('1','true')) AS "completedLessons",
         (SELECT count(*)::int FROM courses c WHERE EXISTS (SELECT 1 FROM mowe_lms.lms_quiz_attempts q
-          WHERE q."userId"=u.id AND q."courseId"=c.id AND q.status='graded' AND q.score>=(c.document->'quiz'->>'passScore')::int)) AS "passedQuizzes",
+          WHERE q."userId"=u.id AND q."courseId"=c.id AND q.status='graded' AND q.score>=GREATEST(70,(c.document->'quiz'->>'passScore')::int))) AS "passedQuizzes",
         (SELECT count(*)::int FROM courses c WHERE length(trim(c.document->'assignment'->>'prompt'))>0
           AND EXISTS (SELECT 1 FROM mowe_lms.lms_learning_records r WHERE r."userId"=u.id AND r.kind='assignment' AND r.key=c.id AND r.document->>'status'='graded')) AS "gradedAssignments",
         EXISTS (SELECT 1 FROM mowe_lms.lms_quiz_attempts q WHERE q."userId"=u.id AND q."courseId"='program' AND q.status='graded' AND q.score>=70) AS "finalPassed",
         cert.id AS "certificateId",cert.document->>'issuedAt' AS "issuedAt"
       FROM mowe_lms.lms_auth_users u CROSS JOIN totals t
       LEFT JOIN mowe_lms.lms_learning_records cert ON cert."userId"=u.id AND cert.kind='certificate' AND cert.key='program'
+      LEFT JOIN mowe_lms.lms_learning_records enroll ON enroll."userId"=u.id AND enroll.kind='enroll' AND enroll.key='program'
       WHERE u.role='STUDENT' AND (${userId}::text IS NULL OR u.id=${userId})
-        AND (EXISTS (SELECT 1 FROM mowe_lms.lms_learning_records r WHERE r."userId"=u.id AND r.kind='enroll' AND r.key='program') OR cert.id IS NOT NULL)
+        AND (enroll.id IS NOT NULL OR cert.id IS NOT NULL)
     ), eligibility AS (
-      SELECT *, (active AND "totalLessons">0 AND "totalQuizzes">0 AND "completedLessons"="totalLessons"
+      SELECT *, (active AND (SELECT "allCoursesAvailable" FROM totals) AND COALESCE(covered, false) AND "totalLessons">0 AND "totalQuizzes">0 AND "completedLessons"="totalLessons"
         AND "passedQuizzes"="totalQuizzes"
         AND (NOT ${settings.requireAssignments} OR "gradedAssignments"="totalAssignments")
         AND (NOT ${settings.requireFinalAssessment} OR "finalPassed")) AS eligible FROM details
@@ -130,7 +140,7 @@ export async function issueCertificate(userId: string, issuedBy: string) {
     if (!learner?.eligible)
       throw new HttpError(
         400,
-        "This learner has not met the certificate requirements. Complete all required lessons, quizzes and assessments first.",
+        "Complete all eight courses and score at least 70% in every course quiz before receiving a certificate. Any additional assignment and assessment requirements must also be met.",
       );
     const courses = await tx.course.findMany({
       where: { status: "published", deletedAt: null },

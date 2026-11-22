@@ -15,6 +15,7 @@ export default function CoursesPage() {
     setFilter,
     saved,
     courses,
+    courseAccess,
     completed,
     go,
     toggleSaved,
@@ -32,8 +33,9 @@ export default function CoursesPage() {
       (!(filter === "saved" || path === "/saved") ||
         saved.includes(course.id)) &&
       (filter !== "complete" ||
-        (entries.length > 0 && done === entries.length)) &&
-      (filter !== "progress" || (done > 0 && done < entries.length))
+        courseAccess[course.id]?.status === "completed") &&
+      (filter !== "progress" ||
+        (courseAccess[course.id]?.status === "available" && done > 0))
     );
   });
   return (
@@ -44,9 +46,9 @@ export default function CoursesPage() {
           {path === "/saved" ? "Saved for your next step." : "My courses"}
         </h1>
         <p>
-          {courses.length} available{" "}
-          {courses.length === 1 ? "course" : "courses"}. Pick up where you left
-          off or explore something new.
+          {data.openCourseAccess
+            ? "Choose any course to start learning."
+            : "Complete each program course to unlock the next."}
         </p>
       </div>
       <div className="catalog-bar">
@@ -85,6 +87,8 @@ export default function CoursesPage() {
             toggleSaved={toggleSaved}
             go={go}
             enrolled={!!data.enrolled}
+            locked={courseAccess[c.id]?.status === "locked"}
+            paymentRequired={courseAccess[c.id]?.status === "payment_required"}
             key={c.id}
             c={c}
             i={courses.indexOf(c)}

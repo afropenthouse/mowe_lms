@@ -6,7 +6,6 @@ import {
   ArrowRight,
   BookOpen,
   ExternalLink,
-  Plus,
   Search,
   X,
 } from "lucide-react";
@@ -45,10 +44,6 @@ export default function ContentLibrary({ courses }: { courses: Course[] }) {
           <h1>Content library</h1>
           <p>Manage your courses, lessons and assessments.</p>
         </div>
-        <Link className="library-primary" href="/admin/courses/new">
-          <Plus size={17} />
-          Create course
-        </Link>
       </header>
       <section className="library-surface" aria-label="Course list">
         <div className="library-toolbar">
@@ -231,9 +226,9 @@ export default function ContentLibrary({ courses }: { courses: Course[] }) {
             <p>
               {courses.length
                 ? "Try another search or choose a different status."
-                : "Create a course to start adding lessons and assessments."}
+                : "Courses appear here after the curriculum is imported."}
             </p>
-            {courses.length ? (
+            {courses.length > 0 && (
               <button
                 onClick={() => {
                   setQuery("");
@@ -242,11 +237,6 @@ export default function ContentLibrary({ courses }: { courses: Course[] }) {
               >
                 Clear filters
               </button>
-            ) : (
-              <Link href="/admin/courses/new">
-                Create your first course
-                <ArrowRight size={15} />
-              </Link>
             )}
           </div>
         )}

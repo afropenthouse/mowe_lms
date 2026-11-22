@@ -48,7 +48,7 @@ The recipient receives a private `/admin/signup` registration link, creates thei
 
 ## Course content and learning
 
-Run `npm run db:migrate` then `npm run db:seed` to install the CBA curriculum. Seeding is repeatable and preserves existing content. The backend also exposes `GET /learning/state` and CSRF-protected `POST /learning/actions`, proxied as `/api/learning/*` by Next.js. Anonymous users receive the published catalogue without answer keys. Authenticated learners receive their own progress and attempts; admins receive drafts, editing data, content history and review queues. Course authoring, restore/delete, grades and programme settings require a verified admin session.
+Run `npm run db:migrate` then `npm run db:seed` to install the CBA curriculum. The import publishes the developer-maintained lesson outline and keeps existing assessments and matching lesson IDs. The backend exposes `GET /learning/state` and CSRF-protected `POST /learning/actions`, proxied as `/api/learning/*` by Next.js. Anonymous users receive the published catalogue. Enrolled learners receive the lesson embeds for courses they can access. Administrators can edit existing courses and review assessments.
 
 Actions include course save/delete/restore, enrollment, lesson notes/progress, quiz start/submit, written assignment submission/review, discussion, settings and learner suspension/reactivation. Quiz limits and grading are enforced server-side; attempts snapshot the assessment so later edits do not change an in-flight quiz. Cloudinary file storage and free certificate issuance are implemented. See [curriculum authoring notes](src/content/README.md).
 

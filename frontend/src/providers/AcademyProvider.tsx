@@ -1,6 +1,7 @@
 "use client";
 import {
   Award,
+  CreditCard,
   BadgeCheck,
   Bookmark,
   BookOpen,
@@ -24,9 +25,12 @@ import {
   type ReactNode,
 } from "react";
 import { courseImages } from "../lib/courseImages";
+import { accessFromProgress } from "../lib/courseAccess";
 import { lessons } from "../lib/curriculum";
-import type { Course } from "../lib/types";
+import { myCoursesPath, publicNavigation } from "../lib/publicNavigation";
+import type { Course, CourseAccess } from "../lib/types";
 import { authRequest, learningRequest } from "../lib/auth";
+import { courseActivityPath } from "../lib/courseActivity";
 const signin = (path = "/dashboard") =>
   `/signup?next=${encodeURIComponent(path)}`;
 function useAcademyState() {
@@ -226,6 +230,10 @@ function useAcademyState() {
       location.href = signin("/dashboard");
       return;
     }
+    if (data.paymentsRequired && user.role === "student") {
+      go("/payments");
+      return;
+    }
     action("enroll", {}, "You’re enrolled. Welcome to your next chapter.").then(
       (r) => r && go("/dashboard"),
     );
@@ -261,23 +269,54 @@ function useAcademyState() {
   const app =
     !authPage &&
     path !== "/" &&
+    !publicNavigation.some(({ href }) => href === path) &&
     !path.startsWith("/verify") &&
     !path.startsWith("/course/");
   const admin = path.startsWith("/admin");
   const courseId = path.split("/")[2];
   const course = courses.find((c) => c.id === courseId);
-  const nextLesson = allLessons.find((l) => !completed.has(l.id));
-  const nextCourse = courses.find((c) =>
-    lessons(c).some((l) => l.id === nextLesson?.id),
-  );
+  const courseAccess: Record<string, CourseAccess | undefined> =
+    data.courseAccess ??
+    (user?.role === "student"
+      ? accessFromProgress(
+          courses,
+          completed,
+          data.attempts ?? [],
+          data.submissions ?? [],
+          data.certificateSettings?.requireAssignments ?? true,
+        )
+      : {});
+  const courseWorkDone =
+    data.enrolled &&
+    courses.length > 0 &&
+    courses.every((entry) => courseAccess[entry.id]?.status === "completed");
+  const nextCourse =
+    courses.find((entry) => {
+      const status = courseAccess[entry.id]?.status;
+      return status === "available" || status === "payment_required";
+    }) ?? (!data.enrolled ? courses[0] : undefined);
+  const nextAccess = nextCourse && courseAccess[nextCourse.id];
+  const nextActivity =
+    nextAccess?.status === "available" ? nextAccess.activity : undefined;
+  const nextLessonId =
+    nextAccess?.status === "available" ? nextAccess.lessonId : undefined;
+  const nextLesson =
+    nextCourse && nextActivity === "lesson"
+      ? lessons(nextCourse).find((entry) => entry.id === nextLessonId)
+      : undefined;
   const nextCourseImage = nextCourse ? courseImages[nextCourse.id] : undefined;
   const learningLink =
-    nextCourse && nextLesson
-      ? `/learn/${nextCourse.id}/${nextLesson.id}`
-      : "/courses";
+    nextAccess?.status === "payment_required"
+      ? "/payments"
+      : nextCourse && nextLessonId
+        ? courseActivityPath(nextCourse.id, nextLessonId, nextActivity)
+        : courseWorkDone
+          ? "/certificates"
+          : myCoursesPath;
   const nav = [
     ["/dashboard", "Overview", LayoutDashboard],
-    ["/courses", "My courses", BookOpen],
+    [myCoursesPath, "My courses", BookOpen],
+    ["/payments", "Payments", CreditCard],
     ["/certificates", "Certificates", Award],
     ["/saved", "Saved courses", Bookmark],
     ["/profile", "My profile", Users],
@@ -286,6 +325,7 @@ function useAcademyState() {
     ["/admin", "Overview", LayoutDashboard],
     ["/admin/courses", "Content library", Library],
     ["/admin/students", "Learners", Users],
+    ["/admin/payments", "Payments", CreditCard],
     ["/admin/team", "Administrators", ShieldCheck],
     ["/admin/review", "Assessments", CheckCheck],
     ["/admin/media", "Media library", FileText],
@@ -339,6 +379,9 @@ function useAcademyState() {
     admin,
     courseId,
     course,
+    courseAccess,
+    courseWorkDone,
+    nextActivity,
     nextLesson,
     nextCourse,
     nextCourseImage,

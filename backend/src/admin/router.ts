@@ -5,6 +5,7 @@ import { csrf, requireSession, HttpError } from "../http.js";
 import { notifyLearningChange } from "../learning/updates.js";
 import { directoryQuery, getLearners, learnersCsv } from "./learners.js";
 import { getReviewPage, reviewQuery } from "./reviews.js";
+import { adminPaymentList, updatePricing } from "../payments/router.js";
 import {
   announcementSchema,
   audienceSchema,
@@ -28,6 +29,19 @@ administration.use(async (req, _res, next) => {
 });
 administration.get("/learners", async (req, res) =>
   res.json(await getLearners(directoryQuery.parse(req.query))),
+);
+administration.get("/payments", async (req, res) =>
+  res.json(
+    await adminPaymentList(
+      z.coerce
+        .number()
+        .int()
+        .min(1)
+        .max(100000)
+        .default(1)
+        .parse(req.query.page),
+    ),
+  ),
 );
 administration.get("/reviews", async (req, res) => {
   res.json(await getReviewPage(reviewQuery.parse(req.query)));
@@ -122,6 +136,10 @@ administration.get("/announcements", async (req, res) => {
   });
 });
 administration.use(csrf);
+administration.put("/payments/pricing", async (req, res) => {
+  await updatePricing(req.body);
+  res.json({ ok: true });
+});
 administration.post("/announcements/preview", async (req, res) => {
   const recipients = await announcementRecipients(
     audienceSchema.parse(req.body),

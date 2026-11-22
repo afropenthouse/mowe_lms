@@ -46,6 +46,9 @@
   min-width: 0;
   scroll-margin-top: 80px;
 }
+.course-study-main:focus {
+  outline: none;
+}
 .course-study .course-outline {
   top: 76px;
   max-height: calc(100dvh - 100px);
@@ -162,124 +165,111 @@
   color: var(--muted);
   white-space: nowrap;
 }
-.study-module-card {
+.study-lesson-list,
+.outline-lesson-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.study-lesson-list {
   border: 1px solid var(--line);
   border-radius: 10px;
-  margin-bottom: 14px;
-  background: light-dark(white, var(--surface));
-  overflow: hidden;
+  background: var(--surface);
 }
-.study-module-card > summary {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 21px 22px;
-  cursor: pointer;
-  list-style: none;
-}
-.study-module-card > summary::-webkit-details-marker,
-.outline-module > summary::-webkit-details-marker {
-  display: none;
-}
-.study-module-index {
-  color: var(--subtle);
-  font-size: 13px;
-}
-.study-module-card > summary > span:nth-child(2) {
-  flex: 1;
-  min-width: 0;
-}
-.study-module-card summary strong {
-  display: block;
-  font-size: 18px;
-  font-weight: 600;
-  line-height: 1.35;
-}
-.study-module-card summary small {
-  display: block;
-  margin-top: 6px;
-  font-size: 12px;
-  color: var(--muted);
-}
-.study-module-card summary > svg {
-  color: var(--muted);
-  transition: transform 0.15s;
-}
-.study-module-card[open] > summary > svg {
-  transform: rotate(180deg);
-}
-.study-module-lessons {
+.study-lesson-list > li + li {
   border-top: 1px solid var(--line);
-  background: light-dark(#fafbfd, var(--surface-muted));
 }
-.study-module-lessons > button {
+.study-lesson-list button {
   display: flex;
   align-items: center;
   width: 100%;
-  gap: 13px;
-  padding: 18px 22px;
+  min-height: 66px;
+  gap: 14px;
+  padding: 16px 20px;
   text-align: left;
-  color: light-dark(#60758f, var(--muted));
+  color: var(--text-strong);
+  border-radius: 8px;
 }
-.study-module-lessons > button + button {
-  border-top: 1px solid light-dark(#edf0f4, var(--line));
-}
-.study-module-lessons > button:hover {
+.study-lesson-list button:hover:not(:disabled) {
   background: var(--active-bg);
   color: var(--accent-text);
 }
+.study-lesson-list button:focus-visible,
+.outline-lesson:focus-visible {
+  outline: 2px solid var(--accent-text);
+  outline-offset: -2px;
+}
 .study-lesson-index {
-  width: 24px;
-  height: 24px;
-  border: 1px solid light-dark(#dfe6ee, var(--line));
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--line);
   border-radius: 50%;
   display: grid;
   place-items: center;
-  font-size: 10px;
+  font-size: 12px;
+  color: var(--muted);
   flex-shrink: 0;
 }
-.study-module-lessons > button > span:nth-child(2) {
+.study-lesson-list strong {
   flex: 1;
   min-width: 0;
-}
-.study-module-lessons strong {
-  display: block;
-  font-size: 15px;
-  font-weight: 500;
+  font-size: 16px;
+  font-weight: 600;
   line-height: 1.4;
 }
-.study-module-lessons small {
-  display: block;
-  color: var(--subtle);
+.study-lesson-completed {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--muted);
   font-size: 12px;
-  margin-top: 5px;
 }
-.study-module-lessons > button > span:nth-child(3) {
-  font-size: 11px;
-  white-space: nowrap;
-}
-.study-module-lessons svg,
+.study-lesson-list svg,
 .course-outline svg {
   flex-shrink: 0;
 }
-.course-finish-card {
-  margin-top: 28px;
-  padding: 26px;
-  background: light-dark(#f4f7fb, var(--surface-muted));
-  border: 1px solid light-dark(#e2e8f1, var(--line));
-  border-radius: 12px;
+.course-assessments {
+  margin-top: 36px;
 }
-.course-finish-card .eyebrow {
-  font-size: 9px;
+.course-assessments h2 {
+  font-size: 24px;
+  margin-bottom: 16px;
 }
-.course-finish-card h2 {
-  font-size: 26px;
-  margin: 12px 0;
+.course-assessment-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(250px, 100%), 1fr));
+  gap: 12px;
 }
-.course-finish-card p {
-  font-size: 14px;
-  line-height: 1.8;
-  margin-bottom: 20px;
+.course-assessment-list button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 16px;
+  text-align: left;
+  color: var(--heading);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.course-assessment-list button:hover:not(:disabled) {
+  color: var(--accent-text);
+  background: var(--active-bg);
+}
+.course-assessment-list button:focus-visible {
+  outline: 2px solid var(--accent-text);
+  outline-offset: 2px;
+}
+.course-assessment-list button > span {
+  flex: 1;
+}
+.course-assessment-list svg {
+  flex-shrink: 0;
+}
+.course-assessment-list small {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
 }
 .course-preview-heading {
   margin-bottom: 25px;
@@ -406,42 +396,13 @@
   text-align: left;
 }
 .outline-overview.active,
-.outline-lesson.active {
+.outline-lesson.active,
+.outline-activity.active {
   background: var(--active-bg);
   color: var(--accent-text);
 }
-.outline-module {
-  border-bottom: 1px solid light-dark(#edf0f5, var(--line));
-  padding: 7px 0;
-}
-.outline-module > summary {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  justify-content: space-between;
-  cursor: pointer;
-  list-style: none;
-  padding: 14px 5px;
-}
-.outline-module summary small {
-  font-size: 8px;
-  letter-spacing: 0.08em;
-  color: var(--subtle);
-  display: block;
-  margin-bottom: 6px;
-}
-.outline-module summary strong {
-  font-weight: 500;
-  font-size: 13px;
-  line-height: 1.45;
-  color: light-dark(#344e6f, var(--text-strong));
-  display: block;
-}
-.outline-module summary > svg {
-  color: var(--muted);
-}
-.outline-module[open] summary > svg {
-  transform: rotate(180deg);
+.outline-lesson-list {
+  margin: 8px 0;
 }
 .outline-lesson {
   display: flex;
@@ -457,8 +418,8 @@
   line-height: 1.5;
 }
 .outline-lesson:not(.active):hover,
-.outline-overview:hover,
-.outline-activity:hover {
+.outline-overview:not(.active):hover,
+.outline-activity:not(.active):hover {
   background: light-dark(#f5f7fa, var(--surface-muted));
 }
 .outline-lesson-number {
@@ -589,31 +550,18 @@
     gap: 8px;
     align-items: flex-start;
   }
-  .study-module-card > summary {
-    padding: 18px 16px;
-    gap: 12px;
-  }
-  .study-module-card summary strong {
-    font-size: 16px;
-  }
-  .study-module-lessons > button {
-    padding: 17px 14px;
+  .study-lesson-list button {
+    padding: 14px;
     gap: 10px;
   }
-  .study-module-lessons strong {
+  .study-lesson-list strong {
     font-size: 14px;
   }
-  .study-module-lessons small {
-    font-size: 10px;
-  }
-  .study-module-lessons > button > span:nth-child(3) {
-    display: none;
+  .study-lesson-completed {
+    font-size: 0;
   }
   .course-reading-panel {
     padding: 24px 21px;
-  }
-  .course-finish-card {
-    padding: 22px;
   }
   .lesson-breadcrumb {
     flex-wrap: wrap;
@@ -631,4 +579,78 @@
   .course-study-main {
     scroll-behavior: auto;
   }
+}
+.course-lock-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  padding: 4px 9px;
+  border-radius: 5px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.course-lock-badge,
+.learning-list .course-lock-badge {
+  color: var(--accent-text);
+  background: var(--active-bg);
+}
+
+.visitor-course:has(.course-lock-badge) .visitor-course-art {
+  filter: saturate(0.55);
+}
+
+.is-course-locked .course-art-image,
+.is-course-locked .card-art > svg {
+  filter: blur(1.3px);
+}
+
+.is-course-locked .course-art-image {
+  transform: scale(1.02);
+}
+
+.course-lock-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(
+    ellipse at center,
+    rgb(13 24 42 / 68%) 0%,
+    rgb(13 24 42 / 24%) 80%
+  );
+  color: #fff;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-shadow: 0 1px 4px rgb(13 24 42 / 70%);
+  pointer-events: none;
+}
+
+.course-locked-notice {
+  max-width: 720px;
+  margin: clamp(24px, 5vw, 64px) auto;
+  width: min(100% - 36px, 720px);
+  padding: clamp(24px, 5vw, 48px);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.course-locked-notice h1 {
+  margin-top: 14px;
+  font-size: clamp(28px, 4vw, 44px);
+}
+
+.course-locked-notice p {
+  margin-block: 12px 22px;
+}
+
+.course-review-notice {
+  margin-block: 14px;
+  padding: 10px 14px;
+  border-radius: 6px;
+  background: var(--surface-muted);
+  color: var(--heading);
 }

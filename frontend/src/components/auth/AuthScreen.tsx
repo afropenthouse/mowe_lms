@@ -289,11 +289,6 @@ export default function AuthScreen({
               alt="MOWE Global"
             />
           </Link>
-          {portal === "admin" && (
-            <div className="auth-admin-badge">
-              <ShieldCheck size={14} /> ADMIN PORTAL
-            </div>
-          )}
           {success ? (
             <div className="auth-success">
               <span className="auth-icon">

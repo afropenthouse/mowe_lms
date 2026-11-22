@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import {
   ArrowRight,
   ArrowUpRight,
@@ -17,12 +18,21 @@ import {
 } from "lucide-react";
 import CourseCard from "../components/courses/CourseCard";
 import { Button } from "../components/ui";
+import PublicFooter from "../layout/PublicFooter";
 
 import { useAcademy } from "../providers/AcademyProvider";
 
 export default function LandingPage() {
-  const { data, saved, courses, completed, go, enroll, toggleSaved } =
-    useAcademy();
+  const {
+    data,
+    saved,
+    courses,
+    courseAccess,
+    completed,
+    go,
+    enroll,
+    toggleSaved,
+  } = useAcademy();
   return (
     <>
       <section className="hero">
@@ -49,19 +59,12 @@ export default function LandingPage() {
             <Button onClick={enroll}>
               Explore your potential <ArrowUpRight size={19} />
             </Button>
-            <button
-              className="hero-preview"
-              onClick={() =>
-                document
-                  .getElementById("program")
-                  ?.scrollIntoView({ behavior: "smooth" })
-              }
-            >
+            <Link href="/program" className="hero-preview">
               <span>
                 <Play size={14} fill="currentColor" />
               </span>
               Discover the program
-            </button>
+            </Link>
           </div>
           <div className="hero-proof">
             <div className="proof-avatars">
@@ -123,7 +126,7 @@ export default function LandingPage() {
       <section className="program-strip">
         <div>
           <BookOpen />
-          <strong>8 focused courses</strong>
+          <strong>A focused curriculum</strong>
           <span>A complete business foundation</span>
         </div>
         <div>
@@ -175,6 +178,7 @@ export default function LandingPage() {
               toggleSaved={toggleSaved}
               go={go}
               enrolled={!!data.enrolled}
+              locked={courseAccess[c.id]?.status === "locked"}
               key={c.id}
               c={c}
               i={i}
@@ -280,18 +284,22 @@ export default function LandingPage() {
         <div className="enroll-box">
           <span>CERTIFIED BUSINESS ADMINISTRATOR</span>
           <h3>
-            {Number(data.settings.price) > 0
-              ? new Intl.NumberFormat("en-NG", {
-                  style: "currency",
-                  currency: data.settings.currency,
-                  maximumFractionDigits: 0,
-                }).format(data.settings.price)
-              : "Explore the program"}
+            {data.paymentsRequired
+              ? "Choose how to pay"
+              : Number(data.settings.price) > 0
+                ? new Intl.NumberFormat("en-NG", {
+                    style: "currency",
+                    currency: data.settings.currency,
+                    maximumFractionDigits: 0,
+                  }).format(data.settings.price)
+                : "Explore the program"}
           </h3>
           <p>
-            {Number(data.settings.price) > 0
-              ? "Program enrollment"
-              : "Enrollment details are managed by the program team."}
+            {data.paymentsRequired
+              ? "Pay per course or get the full program at a discount."
+              : Number(data.settings.price) > 0
+                ? "Program enrollment"
+                : "Enrollment details are managed by the program team."}
           </p>
           <Button onClick={enroll} disabled={!data.settings.enrollmentOpen}>
             {data.settings.enrollmentOpen
@@ -304,39 +312,7 @@ export default function LandingPage() {
           </small>
         </div>
       </section>
-      <footer>
-        <div>
-          <Image
-            width={135}
-            height={50}
-            sizes="135px"
-            src="/mowe-logo.png"
-            alt="MOWE Global"
-          />
-          <p>
-            Building capability.
-            <br />
-            Creating possibilities.
-          </p>
-        </div>
-        <div>
-          <strong>Explore</strong>
-          <button onClick={() => go("/courses")}>The CBA program</button>
-          <a href="https://moweglobal.com" target="_blank" rel="noreferrer">
-            MOWE Global <ArrowUpRight size={13} />
-          </a>
-        </div>
-        <div>
-          <strong>Your learning</strong>
-          <button onClick={() => go("/dashboard")}>Learner dashboard</button>
-          <button onClick={() => go("/certificates")}>Your certificates</button>
-        </div>
-        <div className="footer-end">
-          © {new Date().getFullYear()} MOWE Global.
-          <br />
-          Built for the next chapter.
-        </div>
-      </footer>
+      <PublicFooter />
     </>
   );
 }

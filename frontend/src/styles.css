@@ -2127,6 +2127,56 @@ footer a {
   border-radius: 6px;
   margin-bottom: 25px;
 }
+.lesson-presentation {
+  display: grid;
+  justify-items: start;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.lesson-notes[hidden] {
+  display: none;
+}
+.notes-heading,
+.notes-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.notes-heading {
+  margin-bottom: 20px;
+}
+.notes-heading h2 {
+  margin: 0 0 6px;
+}
+.notes-heading p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+.notes-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.notes-status.error {
+  color: var(--accent-text);
+}
+.lesson-notes textarea {
+  min-height: 280px;
+  line-height: 1.7;
+  resize: vertical;
+}
+.notes-footer {
+  margin-top: 14px;
+  color: var(--muted);
+}
+.lesson-presentation .video-player {
+  margin: 0;
+}
 .lesson-controls {
   display: flex;
   align-items: center;
@@ -2601,6 +2651,13 @@ td > svg {
 }
 .editor-title .eyebrow {
   font-size: 9px;
+}
+.editor-title .status.published {
+  background: var(--navy);
+  color: #fff;
+}
+.editor-title .status.published::before {
+  background: currentColor;
 }
 .editor-title > .button-row {
   flex-shrink: 0;

@@ -6,6 +6,7 @@ import { courseImages } from "../../lib/courseImages";
 import { icons, summaries } from "../../lib/coursePresentation";
 import { lessons } from "../../lib/curriculum";
 import type { Course } from "../../lib/types";
+import CourseLockButton from "./CourseLockButton";
 export default function CourseCard({
   c,
   i,
@@ -14,6 +15,8 @@ export default function CourseCard({
   toggleSaved,
   go,
   enrolled,
+  locked = false,
+  paymentRequired = false,
 }: {
   c: Course;
   i: number;
@@ -22,12 +25,16 @@ export default function CourseCard({
   toggleSaved: (id: string) => void;
   go: (path: string) => void;
   enrolled: boolean;
+  locked?: boolean;
+  paymentRequired?: boolean;
 }) {
   const Icon = icons[i % 8];
   const artwork = courseImages[c.id];
   const done = lessons(c).filter((l) => completed.has(l.id)).length;
   return (
-    <article className="course-card">
+    <article
+      className={`course-card${locked || paymentRequired ? " is-course-locked" : ""}`}
+    >
       <div
         className={`card-art art-${i % 4} ${artwork ? "has-course-image" : ""}`}
         style={artwork ? { backgroundColor: artwork.background } : undefined}
@@ -47,6 +54,11 @@ export default function CourseCard({
         ) : (
           <Icon size={66} strokeWidth={1} />
         )}
+        {(locked || paymentRequired) && (
+          <span className="course-lock-overlay">
+            {paymentRequired ? "Payment required" : "Locked"}
+          </span>
+        )}
         <button
           className={`save-course ${saved.includes(c.id) ? "selected" : ""}`}
           aria-label={saved.includes(c.id) ? "Unsave course" : "Save course"}
@@ -58,21 +70,40 @@ export default function CourseCard({
       <div className="course-body">
         <div className="course-meta">
           <span>{c.difficulty}</span>
-          <span>{c.modules.length} modules</span>
+          <span>{lessons(c).length} lessons</span>
         </div>
         <h3>
-          <button onClick={() => go(`/course/${c.id}`)}>{c.title}</button>
+          <button
+            onClick={() =>
+              go(paymentRequired ? "/payments" : `/course/${c.id}`)
+            }
+          >
+            {c.title}
+          </button>
         </h3>
         <p>{summaries[i] || c.description}</p>
-        {enrolled && (
+        {enrolled && !locked && !paymentRequired && (
           <div className="progress-track">
             <i style={{ width: `${(done / lessons(c).length) * 100}%` }} />
           </div>
         )}
-        <button className="text-link" onClick={() => go(`/course/${c.id}`)}>
-          {done ? "Continue course" : "Explore course"}{" "}
-          <ArrowUpRight size={17} />
-        </button>
+        {locked ? (
+          <CourseLockButton course={c} />
+        ) : (
+          <button
+            className="text-link"
+            onClick={() =>
+              go(paymentRequired ? "/payments" : `/course/${c.id}`)
+            }
+          >
+            {paymentRequired
+              ? "View payment options"
+              : done
+                ? "Continue course"
+                : "Explore course"}{" "}
+            <ArrowUpRight size={17} />
+          </button>
+        )}
       </div>
     </article>
   );

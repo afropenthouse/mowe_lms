@@ -45,6 +45,9 @@ export default function Editor({
     });
   const current = c.modules[moduleIndex];
   const lesson = current?.lessons[lessonIndex];
+  const workbookLessons = c.modules
+    .flatMap((module) => module.lessons)
+    .filter((entry) => entry.embedUrl);
   const newLesson = (): Lesson => ({
     id: crypto.randomUUID(),
     title: "New lesson",
@@ -253,7 +256,27 @@ export default function Editor({
           </button>
         </div>
       )}
-      {tab === "curriculum" && (
+      {tab === "curriculum" && workbookLessons.length > 0 && (
+        <section className="panel">
+          <h2>Interactive lessons</h2>
+          <p>The workbook sets the lesson order and Genially links.</p>
+          <ol>
+            {workbookLessons.map((entry) => (
+              <li key={entry.id}>
+                <a
+                  className="text-link"
+                  href={entry.embedUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {entry.title} <ArrowUpRight size={15} />
+                </a>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
+      {tab === "curriculum" && workbookLessons.length === 0 && (
         <div className="editor-grid">
           <section className="panel module-builder">
             <h3>Course structure</h3>
@@ -487,7 +510,8 @@ export default function Editor({
                 <label>
                   Content type
                   <select
-                    value={lesson.type}
+                    value={lesson.embedUrl ? "interactive" : lesson.type}
+                    disabled={Boolean(lesson.embedUrl)}
                     onChange={(e) =>
                       mutate((d) => {
                         d.modules[moduleIndex].lessons[lessonIndex].type =
@@ -495,6 +519,9 @@ export default function Editor({
                       })
                     }
                   >
+                    {lesson.embedUrl && (
+                      <option value="interactive">Interactive lesson</option>
+                    )}
                     <option value="text">Text lesson</option>
                     <option value="video">Video lesson</option>
                   </select>
@@ -514,7 +541,19 @@ export default function Editor({
                   />
                 </label>
               </div>
-              {lesson.type === "video" && (
+              {lesson.embedUrl && (
+                <p>
+                  <a
+                    className="text-link"
+                    href={lesson.embedUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Open Genially presentation
+                  </a>
+                </p>
+              )}
+              {!lesson.embedUrl && lesson.type === "video" && (
                 <>
                   <label>
                     Video link

@@ -1,8 +1,48 @@
 import { business } from "./business.js";
 import { finance } from "./finance.js";
 import { marketing } from "./marketing.js";
-import { expandCourses } from "./extensions.js";
-export const curriculum = expandCourses([business, finance, marketing]);
+import { operations } from "./operations.js";
+import { leadership } from "./leadership.js";
+import { technology } from "./technology.js";
+import { projects } from "./projects.js";
+import { career } from "./career.js";
+import { interactiveLessons } from "./interactive-lessons.js";
+import type { CourseDocument } from "../learning/validation.js";
+
+export const curriculum: CourseDocument[] = [
+  business,
+  finance,
+  marketing,
+  operations,
+  leadership,
+  technology,
+  projects,
+  career,
+].map((course, index) => ({
+  ...course,
+  modules: interactiveLessons[index].map(
+    ([title, presentationId], lessonIndex) => {
+      const module = course.modules[lessonIndex];
+      const lesson = module.lessons[0];
+      return {
+        ...module,
+        title,
+        lessons: [
+          {
+            ...lesson,
+            title,
+            content: "",
+            videoUrl: "",
+            resourceUrl: "",
+            embedUrl: `https://view.genially.com/${presentationId}`,
+          },
+        ],
+      };
+    },
+  ),
+}));
+
+export const programCourseIds = curriculum.map(({ id }) => id);
 export const program = {
   name: "Certified Business Administrator",
   introduction:

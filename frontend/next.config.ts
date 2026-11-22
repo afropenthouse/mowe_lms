@@ -7,6 +7,10 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return [
       {
+        source: "/api/payments/:path*",
+        destination: `${process.env.BACKEND_URL || "http://127.0.0.1:4000"}/payments/:path*`,
+      },
+      {
         source: "/api/admin/:path*",
         destination: `${process.env.BACKEND_URL || "http://127.0.0.1:4000"}/admin/:path*`,
       },

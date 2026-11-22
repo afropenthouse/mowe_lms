@@ -28,7 +28,6 @@ type Learner = {
   suspendedAt: string | null;
   suspensionReason: string;
   enrolledAt: string | null;
-  completedLessons: number;
   quizAverage: number | null;
   gradedAttempts: number;
 };
@@ -37,7 +36,6 @@ type Directory = {
   total: number;
   page: number;
   pageSize: number;
-  totalLessons: number;
 };
 const statusText = {
   active: "Active",
@@ -124,10 +122,7 @@ export default function LearnerDirectory() {
       <header className="people-heading">
         <div>
           <h1>Learners</h1>
-          <p>
-            Manage learner access and follow their progress through the
-            programme.
-          </p>
+          <p>Manage learner accounts and programme access.</p>
         </div>
         <div className="people-heading-actions">
           <a
@@ -226,7 +221,6 @@ export default function LearnerDirectory() {
                     <th>Learner</th>
                     <th>Account</th>
                     <th>Enrollment</th>
-                    <th>Programme progress</th>
                     <th>Quiz average</th>
                     <th>
                       <span className="library-sr-only">Actions</span>
@@ -235,15 +229,6 @@ export default function LearnerDirectory() {
                 </thead>
                 <tbody>
                   {data.learners.map((learner) => {
-                    const percent = data.totalLessons
-                      ? Math.min(
-                          100,
-                          Math.round(
-                            (learner.completedLessons / data.totalLessons) *
-                              100,
-                          ),
-                        )
-                      : 0;
                     return (
                       <tr key={learner.id}>
                         <td>
@@ -274,20 +259,6 @@ export default function LearnerDirectory() {
                           <small>
                             {learner.enrolledAt ? date(learner.enrolledAt) : ""}
                           </small>
-                        </td>
-                        <td>
-                          <div className="people-progress">
-                            <div>
-                              <span>
-                                {learner.completedLessons} / {data.totalLessons}{" "}
-                                lessons
-                              </span>
-                              <strong>{percent}%</strong>
-                            </div>
-                            <div className="people-progress-track">
-                              <i style={{ width: percent + "%" }} />
-                            </div>
-                          </div>
                         </td>
                         <td>
                           <strong className="people-average">
@@ -395,9 +366,6 @@ export default function LearnerDirectory() {
               <h3>{selected.name}</h3>
               <p>{selected.studentNumber}</p>
             </div>
-            <span className={"people-status " + selected.status}>
-              {statusText[selected.status]}
-            </span>
           </div>
           <dl className="people-detail-list">
             <div>
@@ -416,12 +384,6 @@ export default function LearnerDirectory() {
                 {selected.enrolledAt
                   ? "Enrolled on " + date(selected.enrolledAt)
                   : "Not enrolled"}
-              </dd>
-            </div>
-            <div>
-              <dt>Completed lessons</dt>
-              <dd>
-                {selected.completedLessons} of {data?.totalLessons || 0}
               </dd>
             </div>
             <div>

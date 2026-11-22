@@ -9,10 +9,12 @@ import { learning } from "./learning/router.js";
 import { files } from "./files/router.js";
 import { MulterError } from "multer";
 import { administration } from "./admin/router.js";
+import { learnerPayments, paystackWebhook } from "./payments/router.js";
 export const app = express();
 app.disable("x-powered-by");
 if (config.TRUST_PROXY === "1") app.set("trust proxy", 1);
 app.use(helmet());
+app.use("/payments/webhook", paystackWebhook);
 app.use("/learning", express.json({ limit: "2mb" }));
 app.use("/admin", express.json({ limit: "128kb" }));
 app.use(express.json({ limit: "16kb" }));
@@ -34,6 +36,7 @@ app.get("/health", (_req, res) =>
 app.use("/auth", auth);
 app.use("/learning", learning);
 app.use("/files", files);
+app.use("/payments", learnerPayments);
 app.use("/admin", administration);
 app.use((_req, res) => res.status(404).json({ error: "Endpoint not found." }));
 const errors: ErrorRequestHandler = (error, _req, res, _next) => {

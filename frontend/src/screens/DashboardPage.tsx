@@ -12,9 +12,11 @@ import {
   Target,
 } from "lucide-react";
 import { Button, Stat } from "../components/ui";
+import { LockedBadge } from "../components/courses/CourseLocked";
 import { courseImages } from "../lib/courseImages";
 import { icons } from "../lib/coursePresentation";
 import { lessons } from "../lib/curriculum";
+import { myCoursesPath } from "../lib/publicNavigation";
 
 import { useAcademy } from "../providers/AcademyProvider";
 
@@ -22,6 +24,8 @@ export default function DashboardPage() {
   const {
     data,
     courses,
+    courseAccess,
+    courseWorkDone,
     user,
     allLessons,
     completed,
@@ -29,10 +33,13 @@ export default function DashboardPage() {
     go,
     enroll,
     nextLesson,
+    nextActivity,
     nextCourse,
     nextCourseImage,
     learningLink,
   } = useAcademy();
+  const needsPayment =
+    nextCourse && courseAccess[nextCourse.id]?.status === "payment_required";
   return (
     <>
       <div className="page-title">
@@ -84,15 +91,31 @@ export default function DashboardPage() {
               </span>
               <h2>{nextCourse?.title || "Certified Business Administrator"}</h2>
               <p>
-                {data.enrolled
-                  ? nextLesson?.title ||
-                    "You’ve completed your lessons. Explore your assessments."
-                  : "Build practical skills across business, leadership, finance, technology, and more."}
+                {needsPayment
+                  ? "Choose a payment option to unlock this course."
+                  : data.enrolled
+                    ? nextLesson?.title ||
+                      (nextActivity === "assessment"
+                        ? "Course assessment"
+                        : nextActivity === "assignment"
+                          ? "Workplace assignment"
+                          : courseWorkDone
+                            ? "You’ve completed the coursework."
+                            : "Explore your learning path.")
+                    : "Build practical skills across business fundamentals, finance, and marketing."}
               </p>
               <Button
-                onClick={() => (data.enrolled ? go(learningLink) : enroll())}
+                onClick={() =>
+                  needsPayment || data.enrolled ? go(learningLink) : enroll()
+                }
               >
-                {data.enrolled ? "Continue learning" : "Enroll in the program"}{" "}
+                {courseWorkDone
+                  ? "View certificates"
+                  : needsPayment
+                    ? "View payment options"
+                    : data.enrolled
+                      ? "Continue learning"
+                      : "Enroll in the program"}{" "}
                 <ArrowRight size={18} />
               </Button>
             </div>
@@ -116,17 +139,22 @@ export default function DashboardPage() {
           </div>
           <div className="small-heading">
             <h2>Your learning path</h2>
-            <button className="text-link" onClick={() => go("/courses")}>
+            <button className="text-link" onClick={() => go(myCoursesPath)}>
               View all <ArrowRight size={16} />
             </button>
           </div>
           <div className="learning-list">
             {courses.slice(0, 4).map((c, i) => {
-              const Icon = icons[i];
+              const Icon = icons[i % icons.length];
               const artwork = courseImages[c.id];
               const done = lessons(c).filter((l) => completed.has(l.id)).length;
+              const locked = courseAccess[c.id]?.status === "locked";
+              const unpaid = courseAccess[c.id]?.status === "payment_required";
               return (
-                <button key={c.id} onClick={() => go(`/course/${c.id}`)}>
+                <button
+                  key={c.id}
+                  onClick={() => go(unpaid ? "/payments" : `/course/${c.id}`)}
+                >
                   <span className={`list-icon art-${i}`}>
                     {artwork ? (
                       <Image
@@ -148,9 +176,17 @@ export default function DashboardPage() {
                   </span>
                   <div>
                     <strong>{c.title}</strong>
-                    <span>
-                      {done} of {lessons(c).length} lessons completed
-                    </span>
+                    {locked ? (
+                      <LockedBadge />
+                    ) : (
+                      <span>
+                        {unpaid
+                          ? "Payment required"
+                          : courseAccess[c.id]?.status === "completed"
+                            ? "Course completed"
+                            : `${done} of ${lessons(c).length} lessons completed`}
+                      </span>
+                    )}
                   </div>
                   <ChevronRight size={20} />
                 </button>
@@ -186,7 +222,7 @@ export default function DashboardPage() {
               Set aside a little time each week. Consistency turns learning into
               lasting capability.
             </p>
-            <button className="text-link" onClick={() => go("/courses")}>
+            <button className="text-link" onClick={() => go(myCoursesPath)}>
               Find your next lesson <ArrowUpRight size={16} />
             </button>
           </div>

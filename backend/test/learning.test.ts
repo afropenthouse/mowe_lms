@@ -4,37 +4,45 @@ import { randomUUID } from "node:crypto";
 import { once } from "node:events";
 process.env.NODE_ENV = "test";
 process.env.MAIL_DRIVER = "test";
+process.env.OPEN_COURSE_ACCESS = "false";
+process.env.PAYMENTS_REQUIRED = "false";
 const { app } = await import("../src/app.js");
 const { db } = await import("../src/db.js");
 const { config, SESSION_COOKIE } = await import("../src/config.js");
 const { digest, token } = await import("../src/auth/crypto.js");
 const { curriculum } = await import("../src/content/curriculum.js");
 const { courseSchema } = await import("../src/learning/validation.js");
-const { mergeExpandedLessons } = await import("../src/content/install.js");
+const { applyInteractiveCurriculum } =
+  await import("../src/content/install.js");
 const { withoutAnswers, gradeAssessment } =
   await import("../src/learning/assessment.js");
+const { courseForLearner, courseProgression, orderedCourses } =
+  await import("../src/learning/progression.js");
 
 test("CBA content covers the active catalogue with ten explained questions per course", () => {
-  assert.equal(curriculum.length, 3);
+  assert.equal(curriculum.length, 8);
+  assert.deepEqual(
+    orderedCourses([...curriculum].reverse()).map((c) => c.id),
+    Array.from({ length: 8 }, (_, i) => `course-${i + 1}`),
+  );
   assert.deepEqual(
     curriculum.map((c) => c.modules.length),
-    [4, 4, 3],
+    [4, 4, 3, 3, 3, 2, 4, 4],
   );
   for (const course of curriculum) {
     courseSchema.parse(course);
     assert.equal(course.quiz.questions.length, 10);
-    assert.ok(course.modules.every((m) => m.lessons.length === 3));
+    assert.ok(course.modules.every((m) => m.lessons.length === 1));
     for (const m of course.modules)
       for (const l of m.lessons) {
-        assert.ok(l.content.split(/\s+/).length >= 180, l.title);
+        assert.equal(l.content, "");
+        assert.equal(l.videoUrl, "");
+        assert.equal(l.resourceUrl, "");
         assert.equal(l.placeholder, false);
-        for (const heading of [
-          "What you will learn",
-          "Workplace example",
-          "Practice and reflection",
-          "Key takeaway",
-        ])
-          assert.ok(l.content.includes(heading));
+        assert.match(
+          l.embedUrl ?? "",
+          /^https:\/\/view\.genially\.com\/[a-f0-9]{24}$/,
+        );
       }
     for (const q of withoutAnswers(course).quiz.questions) {
       assert.equal("answer" in q, false);
@@ -48,24 +56,45 @@ test("CBA content covers the active catalogue with ten explained questions per c
   }
 });
 
-test("course expansion preserves admin edits, removed modules and existing lesson IDs", () => {
-  const expanded = curriculum[0];
-  const current = structuredClone(expanded);
-  current.title = "Administrator-edited title";
-  current.modules = current.modules
-    .slice(0, 3)
-    .map((m) => ({ ...m, lessons: m.lessons.slice(0, 1) }));
-  current.modules[0].lessons[0].content =
-    "An administrator's own lesson content";
-  const merged = mergeExpandedLessons(current, expanded);
-  assert.equal(merged.added, 6);
-  assert.equal(merged.document.title, current.title);
-  assert.equal(merged.document.modules.length, 3);
-  assert.equal(
-    merged.document.modules[0].lessons[0].content,
-    current.modules[0].lessons[0].content,
+test("open access makes every course available without payment or prerequisites", () => {
+  const access = courseProgression(curriculum, [], [], true, new Set(), true);
+  assert.ok(curriculum.every(({ id }) => access[id].status === "available"));
+  const paidAccess = courseProgression(
+    curriculum,
+    [],
+    [],
+    true,
+    new Set(),
+    false,
   );
-  assert.equal(mergeExpandedLessons(merged.document, expanded).added, 0);
+  assert.equal(paidAccess["course-1"].status, "payment_required");
+  assert.equal(paidAccess["course-8"].status, "locked");
+});
+
+test("the lesson import preserves assessment edits and replaces the legacy outline", () => {
+  const source = curriculum[0];
+  const current = structuredClone(source);
+  current.title = "Administrator-edited title";
+  current.quiz.passScore = 75;
+  current.assignment.prompt = "Administrator-edited assignment";
+  const first = current.modules[0].lessons[0];
+  first.content = "Legacy lesson text";
+  delete first.embedUrl;
+  current.modules[0].lessons.push({ ...first, id: "c1-l1-case" });
+  const merged = applyInteractiveCurriculum(source, current);
+  assert.equal(merged.title, current.title);
+  assert.deepEqual(merged.quiz, current.quiz);
+  assert.deepEqual(merged.assignment, current.assignment);
+  assert.deepEqual(merged.modules[0].lessons, source.modules[0].lessons);
+  assert.deepEqual(applyInteractiveCurriculum(source, merged), merged);
+  assert.equal(
+    courseForLearner(merged, false).modules[0].lessons[0].embedUrl,
+    undefined,
+  );
+  assert.equal(
+    courseForLearner(merged, true).modules[0].lessons[0].embedUrl,
+    source.modules[0].lessons[0].embedUrl,
+  );
 });
 
 test("shared content, administrator permissions and assessment lifecycle", async (t) => {
@@ -141,11 +170,13 @@ test("shared content, administrator permissions and assessment lifecycle", async
     status: "draft" as const,
     quiz: { ...structuredClone(curriculum[0].quiz), timeLimit: 1 },
   };
+  c.modules[0].lessons[0].content = "Example public preview";
+  delete c.modules[0].lessons[0].embedUrl;
   let attemptId = "",
     submissionId = "";
   try {
     await t.test(
-      "only admins can author, and only published courses reach learners",
+      "developers install courses and administrators can publish them",
       async () => {
         assert.equal(
           (await visitor.action("saveCourse", { course: c })).status,
@@ -157,8 +188,18 @@ test("shared content, administrator permissions and assessment lifecycle", async
         );
         assert.equal(
           (await administrator.action("saveCourse", { course: c })).status,
-          200,
+          403,
         );
+        await db.course.create({
+          data: {
+            id: c.id,
+            title: c.title,
+            status: c.status,
+            position: c.order,
+            version: 1,
+            document: { ...c, version: 1 },
+          },
+        });
         assert.ok(
           !(await learner.request("/state")).data.courses.some(
             (v: any) => v.id === courseId,
@@ -184,8 +225,11 @@ test("shared content, administrator permissions and assessment lifecycle", async
           (v: any) => v.id === courseId,
         );
         assert.ok(visible);
-        assert.equal("answer" in visible.quiz.questions[0], false);
-        assert.equal("explanation" in visible.quiz.questions[0], false);
+        assert.equal(visible.quiz.questions.length, 0);
+        assert.equal(visible.questionCount, 10);
+        assert.ok(visible.modules[0].lessons[0].content);
+        assert.equal(visible.modules[1].lessons[0].content, "");
+        assert.equal(visible.modules[0].lessons[0].embedUrl, undefined);
         assert.ok((await db.courseVersion.count({ where: { courseId } })) > 0);
       },
     );
@@ -654,6 +698,240 @@ test("shared content, administrator permissions and assessment lifecycle", async
           ).status,
           400,
         );
+      },
+    );
+    await t.test(
+      "later courses unlock only after prior coursework is complete",
+      async () => {
+        const fileId = randomUUID();
+        const [first, second, third] = curriculum.map((base, index) => {
+          const id = `sequence-${index}-${suffix}`;
+          const lesson = { ...base.modules[0].lessons[0], id: id + "-lesson" };
+          if (index === 1) lesson.resourceUrl = "/api/files/" + fileId;
+          return {
+            ...base,
+            id,
+            order: index,
+            modules: [{ ...base.modules[0], lessons: [lesson] }],
+            quiz: {
+              ...base.quiz,
+              questions: [base.quiz.questions[0]],
+              timeLimit: 0,
+            },
+          };
+        });
+        const sequence = [first, second, third];
+        const lesson = (course: typeof first) => course.modules[0].lessons[0];
+        const participant = await client("STUDENT");
+        try {
+          await db.course.createMany({
+            data: sequence.map((course) => ({
+              id: course.id,
+              title: course.title,
+              status: "published",
+              position: course.order,
+              document: course,
+            })),
+          });
+          await db.fileAsset.create({
+            data: {
+              id: fileId,
+              publicId: "sequence/" + suffix,
+              purpose: "resource",
+              resourceType: "raw",
+              deliveryType: "authenticated",
+              format: "pdf",
+              secureUrl: "https://example.test/resource.pdf",
+              name: "Resource.pdf",
+              mime: "application/pdf",
+              size: 12,
+            },
+          });
+          assert.equal((await participant.action("enroll")).status, 200);
+          const oldAttempt = await db.quizAttempt.create({
+            data: {
+              userId: userIds.at(-1)!,
+              courseId: second.id,
+              assessment: second.quiz,
+            },
+          });
+          const initial = (await participant.request("/state")).data;
+          assert.deepEqual(initial.courseAccess[third.id], {
+            status: "locked",
+            prerequisiteId: first.id,
+          });
+          const preview = initial.courses.find(
+            (course: typeof first) => course.id === second.id,
+          );
+          assert.equal(lesson(preview).resourceUrl, "");
+          assert.deepEqual(preview.quiz.questions, []);
+          assert.equal(preview.assignment.prompt, "");
+          assert.equal(initial.attempts.length, 0);
+          assert.equal(
+            (await participant.request("/" + fileId, undefined, "/files"))
+              .status,
+            403,
+          );
+          for (const [name, payload] of [
+            ["progress", { lessonId: lesson(second).id, completed: true }],
+            ["quizStart", { courseId: second.id }],
+            ["quizSubmit", { attemptId: oldAttempt.id, answers: {} }],
+            [
+              "assignment",
+              {
+                courseId: second.id,
+                content: "Trying to submit a locked assignment.",
+              },
+            ],
+            [
+              "comment",
+              {
+                courseId: second.id,
+                content: "Trying to post in a locked course.",
+              },
+            ],
+            ["quizStart", { courseId: "program" }],
+          ] as const) {
+            const blocked = await participant.action(name, payload);
+            assert.equal(blocked.status, 403);
+            assert.match(blocked.data.error, /Each course unlocks the next/);
+          }
+          assert.equal(
+            (
+              await participant.action("progress", {
+                lessonId: lesson(first).id,
+                completed: true,
+              })
+            ).status,
+            200,
+          );
+          assert.equal(
+            (await participant.action("quizStart", { courseId: second.id }))
+              .status,
+            403,
+          );
+          const quiz = await participant.action("quizStart", {
+            courseId: first.id,
+          });
+          assert.equal(quiz.status, 200);
+          const question = first.quiz.questions[0];
+          assert.equal(
+            (
+              await participant.action("quizSubmit", {
+                attemptId: quiz.data.attemptId,
+                answers: { [question.id]: question.answer },
+              })
+            ).data.score,
+            100,
+          );
+          assert.equal(
+            (
+              await participant.action("assignment", {
+                courseId: first.id,
+                content: "My complete assignment for the first course.",
+              })
+            ).status,
+            200,
+          );
+          const awaitingGrade = (await participant.request("/state")).data;
+          assert.equal(awaitingGrade.courseAccess[second.id].status, "locked");
+          assert.equal(
+            awaitingGrade.courseAccess[first.id].activity,
+            "assignment",
+          );
+          const submission = awaitingGrade.submissions.find(
+            (entry: { course_id: string }) => entry.course_id === first.id,
+          );
+          assert.equal(
+            (
+              await administrator.action("grade", {
+                id: submission.id,
+                status: "graded",
+                feedback: "Reviewed and complete.",
+              })
+            ).status,
+            200,
+          );
+          const unlocked = (await participant.request("/state")).data;
+          assert.equal(unlocked.courseAccess[first.id].status, "completed");
+          assert.equal(unlocked.courseAccess[second.id].status, "available");
+          assert.equal(
+            unlocked.courseAccess[third.id].prerequisiteId,
+            second.id,
+          );
+          const secondCourse = unlocked.courses.find(
+            (course: typeof first) => course.id === second.id,
+          );
+          assert.equal(
+            lesson(secondCourse).resourceUrl,
+            lesson(second).resourceUrl,
+          );
+          assert.equal(lesson(secondCourse).content, lesson(second).content);
+          assert.equal("answer" in secondCourse.quiz.questions[0], false);
+          assert.equal(
+            (await participant.action("quizStart", { courseId: second.id }))
+              .status,
+            200,
+          );
+          assert.equal(
+            (await participant.action("quizStart", { courseId: third.id }))
+              .status,
+            403,
+          );
+          const secondQuestion = second.quiz.questions[0];
+          assert.equal(
+            (
+              await participant.action("quizSubmit", {
+                attemptId: oldAttempt.id,
+                answers: { [secondQuestion.id]: secondQuestion.answer },
+              })
+            ).data.score,
+            100,
+          );
+          assert.equal(
+            (
+              await participant.action("progress", {
+                lessonId: lesson(second).id,
+                completed: true,
+              })
+            ).status,
+            200,
+          );
+          assert.equal(
+            (
+              await participant.action("assignment", {
+                courseId: second.id,
+                content: "My complete assignment for the second course.",
+              })
+            ).status,
+            200,
+          );
+          const secondSubmission = (
+            await participant.request("/state")
+          ).data.submissions.find(
+            (entry: { course_id: string }) => entry.course_id === second.id,
+          );
+          assert.equal(
+            (
+              await administrator.action("grade", {
+                id: secondSubmission.id,
+                status: "graded",
+                feedback: "Reviewed and complete.",
+              })
+            ).status,
+            200,
+          );
+          assert.equal(
+            (await participant.action("quizStart", { courseId: third.id }))
+              .status,
+            200,
+          );
+        } finally {
+          await db.fileAsset.deleteMany({ where: { id: fileId } });
+          await db.course.deleteMany({
+            where: { id: { in: sequence.map(({ id }) => id) } },
+          });
+        }
       },
     );
   } finally {

@@ -2,56 +2,21 @@
 import { ArrowRight, ArrowUpRight, Printer, GraduationCap } from "lucide-react";
 import Quiz from "../components/Quiz";
 import { Button } from "../components/ui";
-import { lessons } from "../lib/curriculum";
 
 import { useAcademy } from "../providers/AcademyProvider";
 
 export default function CertificatesPage() {
-  const {
-    data,
-    busy,
-    courses,
-    allLessons,
-    completed,
-    go,
-    action,
-    learningLink,
-  } = useAcademy();
+  const { data, busy, courses, courseWorkDone, go, action, learningLink } =
+    useAcademy();
   const settings = data.certificateSettings;
-  const passed = (courseId: string, passScore: number) =>
-    data.attempts?.some(
-      (attempt: { course_id: string; status: string; score: number }) =>
-        attempt.course_id === courseId &&
-        attempt.status === "graded" &&
-        attempt.score >= passScore,
-    );
-  const lessonsDone =
-    allLessons.length > 0 &&
-    allLessons.every((lesson) => completed.has(lesson.id));
-  const pendingQuiz = courses.find(
-    (course) => !passed(course.id, course.quiz.passScore),
+  const finalPassed = data.attempts?.some(
+    (attempt: { course_id: string; status: string; score: number }) =>
+      attempt.course_id === "program" &&
+      attempt.status === "graded" &&
+      attempt.score >= 70,
   );
-  const pendingAssignment =
-    settings?.requireAssignments &&
-    courses.find(
-      (course) =>
-        course.assignment.prompt.trim() &&
-        !data.submissions?.some(
-          (submission: { course_id: string; status: string }) =>
-            submission.course_id === course.id &&
-            submission.status === "graded",
-        ),
-    );
-  const courseWorkDone =
-    data.enrolled && lessonsDone && !pendingQuiz && !pendingAssignment;
-  const needsFinal = settings?.requireFinalAssessment && !passed("program", 70);
-  let continueTo = data.enrolled ? learningLink : "/dashboard";
-  const nextCourse = pendingQuiz || pendingAssignment;
-  if (data.enrolled && lessonsDone && nextCourse) {
-    const firstLesson = lessons(nextCourse)[0];
-    if (firstLesson)
-      continueTo = `/learn/${nextCourse.id}/${firstLesson.id}?tab=${pendingQuiz ? "assessment" : "assignment"}`;
-  }
+  const needsFinal = settings?.requireFinalAssessment && !finalPassed;
+  const continueTo = data.enrolled ? learningLink : "/dashboard";
   return (
     <>
       <div className="page-title">
