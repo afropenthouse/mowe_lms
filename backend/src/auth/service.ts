@@ -36,6 +36,8 @@ export async function register(input: {
   inviteToken?: string;
 }) {
   const passwordHash = await hashPassword(input.password);
+  const sessionToken = token();
+  const expiresAt = minutes(60 * 24 * 7);
   const code = verificationCode();
   const challengeId = randomUUID();
   const result = await db.$transaction(async (tx) => {
@@ -45,6 +47,11 @@ export async function register(input: {
     const existing = await tx.user.findUnique({
       where: { email: input.email },
     });
+    if (existing && !config.REQUIRE_EMAIL_VERIFICATION)
+      throw new HttpError(
+        409,
+        "An account with this email already exists. Sign in to continue.",
+      );
     if (existing?.emailVerifiedAt || existing?.suspendedAt)
       return { deliver: false, challengeId: randomUUID() };
     let role: "STUDENT" | "ADMIN" = "STUDENT";
@@ -90,6 +97,16 @@ export async function register(input: {
       : await tx.user.create({
           data: { email: input.email, name: input.name, passwordHash, role },
         });
+    if (!config.REQUIRE_EMAIL_VERIFICATION) {
+      const activeUser = await tx.user.update({
+        where: { id: user.id },
+        data: { emailVerifiedAt: new Date() },
+      });
+      await tx.session.create({
+        data: { userId: user.id, tokenHash: digest(sessionToken), expiresAt },
+      });
+      return { deliver: false, challengeId: "", user: activeUser };
+    }
     await tx.authChallenge.upsert({
       where: { userId_purpose: { userId: user.id, purpose: "VERIFY_EMAIL" } },
       create: {
@@ -110,6 +127,8 @@ export async function register(input: {
     });
     return { deliver: true, challengeId };
   });
+  if ("user" in result && result.user)
+    return { user: result.user, sessionToken, expiresAt };
   if (result.deliver) await deliver(input.email, code, "VERIFY_EMAIL");
   return {
     message: generic,
@@ -288,7 +307,7 @@ export async function login(
       "ACCOUNT_SUSPENDED",
     );
   requirePortal(user.role, portal);
-  if (!user.emailVerifiedAt) {
+  if (!user.emailVerifiedAt && config.REQUIRE_EMAIL_VERIFICATION) {
     let challenge = await db.authChallenge.findUnique({
       where: { userId_purpose: { userId: user.id, purpose: "VERIFY_EMAIL" } },
     });
@@ -343,6 +362,17 @@ export async function login(
         401,
         "Your credentials changed. Please sign in again.",
       );
+    if (!current.emailVerifiedAt && !config.REQUIRE_EMAIL_VERIFICATION) {
+      const activeUser = await tx.user.update({
+        where: { id: user.id },
+        data: { emailVerifiedAt: new Date() },
+      });
+      user.emailVerifiedAt = activeUser.emailVerifiedAt;
+      await tx.authChallenge.updateMany({
+        where: { userId: user.id, purpose: "VERIFY_EMAIL", consumedAt: null },
+        data: { consumedAt: new Date() },
+      });
+    }
     await tx.session.create({
       data: { userId: user.id, tokenHash: digest(raw), expiresAt },
     });

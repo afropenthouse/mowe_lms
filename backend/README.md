@@ -22,6 +22,12 @@ Open `http://localhost:5173/signup` or `/login`. The backend listens on `127.0.0
 
 For a new checkout: `npm ci`, copy `.env.example` to `.env`, supply real settings, then run `npm run db:generate` and `npm run db:migrate`. Never commit `.env`. The database connection uses verified TLS and channel binding. All auth tables and Prisma migration history are isolated inside the `mowe_lms` PostgreSQL schema.
 
+## Deploy the backend on Render
+
+Use `backend` as the service root directory, `npm ci --include=dev && npm run build` as the build command, `npm start` as the start command, and `/health` as the health check path. Set `NODE_ENV=production`, `FRONTEND_URL` to the deployed frontend HTTPS origin, `TRUST_PROXY=1`, and `REQUIRE_EMAIL_VERIFICATION=false` to allow signup without an OTP. Let Render provide `PORT`.
+
+The backend's `.npmrc` includes development dependencies during installation because TypeScript types and the Prisma CLI are needed to build. Production binds to `0.0.0.0` so Render can reach the server. Configure database, auth, payment, file storage, and email secrets in Render's environment settings. Run migrations before serving traffic against a new database. SMTP-dependent flows still require hosting that permits SMTP connections.
+
 ## Create the first administrator
 
 Administrator signup requires an email-bound, one-use invitation. Run this trusted local CLI with the intended administrator's unregistered email:
@@ -30,14 +36,14 @@ Administrator signup requires an email-bound, one-use invitation. Run this trust
 npm run admin:invite -- admin@example.com
 ```
 
-The recipient receives a private `/admin/signup` registration link, creates their password, and verifies their email code. The CLI does not print invitation tokens. Signed-in Super Admins can invite additional administrators from `/admin/team`. Public signup at `/signup` is learner-only and has no account-type selector. `/admin` redirects signed-out visitors to `/admin/login`. Public signup cannot create a privileged role without a valid invitation. Existing accounts are not promoted by an invitation.
+The recipient receives a private `/admin/signup` registration link, creates their password, and is signed in immediately. Email verification is only requested when `REQUIRE_EMAIL_VERIFICATION=true`. The CLI does not print invitation tokens. Signed-in Super Admins can invite additional administrators from `/admin/team`. Public signup at `/signup` is learner-only and has no account-type selector. `/admin` redirects signed-out visitors to `/admin/login`. Public signup cannot create a privileged role without a valid invitation. Existing accounts are not promoted by an invitation.
 
 ## Implemented flows
 
-- Learner signup and invitation-based admin signup.
-- Six-digit email verification, 10-minute expiry, five attempts, one-use consumption, and a 60-second resend cooldown.
+- Learner signup and invitation-based admin signup activate the account and create a session immediately, without sending an email OTP. `REQUIRE_EMAIL_VERIFICATION=false` is the default; set it to `true` to restore email verification. Existing pending accounts can sign in with their password when verification is disabled.
+- Optional six-digit email verification, 10-minute expiry, five attempts, one-use consumption, and a 60-second resend cooldown.
 - New and reset passwords must contain 8–12 characters. Older passwords remain accepted at login to avoid locking out existing accounts.
-- Login with password hashing, verified-email enforcement, opaque database-backed sessions, optional 30-day remember-me, and a ten-session cap.
+- Login with password hashing, optional email verification, opaque database-backed sessions, optional 30-day remember-me, and a ten-session cap.
 - Password reset using an email code. Successful reset invalidates all existing sessions and pending account challenges.
 - Sign out, sign out everywhere, persistent profiles, and a paginated administrator-only user directory.
 - CSRF checks, origin validation, security headers, request-body limits, and persistent IP/account throttling.

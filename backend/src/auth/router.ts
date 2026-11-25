@@ -77,7 +77,16 @@ auth.post("/register", async (req, res) => {
     .strict()
     .parse(req.body);
   await limitRequest(req, "register", input.email);
-  res.status(201).json(await register(input));
+  const result = await register(input);
+  if ("user" in result && result.user) {
+    res.cookie(SESSION_COOKIE, result.sessionToken, {
+      ...cookieOptions,
+      expires: result.expiresAt,
+    });
+    res.status(201).json({ user: publicUser(result.user) });
+    return;
+  }
+  res.status(201).json(result);
 });
 auth.post("/login", async (req, res) => {
   const input = z

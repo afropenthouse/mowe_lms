@@ -123,7 +123,13 @@ export default function AuthScreen({
           role,
           ...(role === "admin" ? { inviteToken: invite } : {}),
         });
-        router.push(challengePath("verify-email", result.challengeId));
+        if (result.user) {
+          await refresh();
+          router.replace(safeDestination(next, result.user.role));
+          router.refresh();
+        } else {
+          router.push(challengePath("verify-email", result.challengeId));
+        }
       } else if (mode === "login") {
         const result = await authRequest("/login", {
           email,

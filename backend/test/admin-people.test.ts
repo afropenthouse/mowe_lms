@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import { once } from "node:events";
 process.env.NODE_ENV = "test";
 process.env.MAIL_DRIVER = "test";
+process.env.REQUIRE_EMAIL_VERIFICATION = "true";
 const { app } = await import("../src/app.js");
 const { db } = await import("../src/db.js");
 const { config, SESSION_COOKIE } = await import("../src/config.js");

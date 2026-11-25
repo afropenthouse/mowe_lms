@@ -16,6 +16,7 @@ const parsed = z
     SMTP_PASS: z.string().min(1),
     MAIL_FROM: z.string().min(1),
     MAIL_DRIVER: z.enum(["smtp", "test"]).default("smtp"),
+    REQUIRE_EMAIL_VERIFICATION: z.stringbool().default(false),
     TRUST_PROXY: z.enum(["0", "1"]).default("0"),
     PAYMENTS_REQUIRED: z.stringbool().optional(),
     OPEN_COURSE_ACCESS: z.stringbool().default(false),
