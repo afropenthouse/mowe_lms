@@ -5,7 +5,7 @@ import type { Prisma } from "../generated/prisma/client.js";
 const amount = z.number().int().min(10_000).max(100_000_000);
 export const pricingSchema = z
   .object({
-    bundleAmount: amount.default(28_000_000),
+    bundleAmount: amount.default(70_000_000),
     courseAmounts: z.record(z.string().max(100), amount).default({}),
   })
   .strict();

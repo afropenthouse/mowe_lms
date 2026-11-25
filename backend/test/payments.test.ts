@@ -250,7 +250,7 @@ test(
         201,
       );
       const bundled = nextReference();
-      assert.equal(gateway.get(bundled)?.amount, 28_000_000);
+      assert.equal(gateway.get(bundled)?.amount, 70_000_000);
       gateway.get(bundled)!.status = "success";
       const event = JSON.stringify({
         event: "charge.success",
@@ -347,7 +347,7 @@ test(
       assert.equal(
         history.find((p: { reference: string }) => p.reference === bundled)
           .amount,
-        28_000_000,
+        70_000_000,
       );
     } finally {
       await db.payment.deleteMany({ where: { userId: { in: ids } } });

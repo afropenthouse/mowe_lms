@@ -4,7 +4,7 @@ The developer-maintained catalogue contains courses 1–8 and 27 Genially presen
 
 Run `npm run db:migrate` and then `npm run db:seed` in the backend before deploying the catalogue. The import publishes the eight courses, uses the original core lesson IDs, and retains existing quizzes, assignments and matching lesson data. Earlier versions of the curriculum are saved in course history. Importing again applies the code-defined lesson titles, links and order.
 
-Learners can currently join for free and open any course or lesson. To restore sequential learning and the configured checkout rules, set `OPEN_COURSE_ACCESS=false` and restart the backend. Checkout pricing defaults to ₦100,000 per course or ₦280,000 for all eight, and administrators can edit prices in Payments.
+Courses unlock sequentially by default (`OPEN_COURSE_ACCESS=false`). Learners must finish the current course's lessons, pass its quiz with at least 70% (or its higher configured pass mark), and receive a grade for its assignment when assignments are required before the next course opens. The configured payment requirement also applies. Set `OPEN_COURSE_ACCESS=true` only to temporarily open every course, and restart the backend after changing this setting. Checkout pricing defaults to ₦100,000 per course or ₦700,000 for all eight, and administrators can edit prices in Payments.
 ## Further reading checked during authoring
 
 - [Corporate Affairs Commission: business names](https://www.cac.gov.ng/services/business-name) — official registration resource.

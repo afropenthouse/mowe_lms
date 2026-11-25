@@ -39,7 +39,10 @@ export default function AssessmentReview() {
       <header className="people-heading">
         <div>
           <h1>Assessments</h1>
-          <p>Review written assignments and grade short-answer quizzes.</p>
+          <p>
+            Review learner answers and uploaded files, give feedback, and
+            approve assignments or request revisions.
+          </p>
         </div>
       </header>
       <div className="people-surface">
@@ -110,7 +113,7 @@ function ReviewQueue({ kind }: { kind: ReviewPage["kind"] }) {
               }
             >
               {kind === "assignments"
-                ? "Learner submissions will appear here."
+                ? "Written answers and uploaded PDFs or documents will appear here after learners submit their assignments."
                 : "Submitted short-answer quizzes will appear here."}
             </Empty>
           )}
@@ -237,11 +240,16 @@ function AssignmentReview({
       }
       complete={item.status === "graded"}
     >
-      {item.content && <p className="submitted-text">{item.content}</p>}
+      {item.content && (
+        <div>
+          <strong>Written response</strong>
+          <p className="submitted-text">{item.content}</p>
+        </div>
+      )}
       {item.attachment ? (
         <div className="uploaded-file">
           <a href={item.attachment.url} target="_blank" rel="noreferrer">
-            Download {item.attachment.name}
+            Open submitted file: {item.attachment.name}
           </a>
           <span>{Math.ceil(item.attachment.size / 1024)} KB</span>
         </div>

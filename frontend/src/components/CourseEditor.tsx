@@ -10,6 +10,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useState } from "react";
+import Link from "next/link";
 import type { Course, Lesson } from "../lib/types";
 import { Button } from "./ui";
 import FileUpload from "./FileUpload";
@@ -919,7 +920,14 @@ export default function Editor({
       )}
       {tab === "assignment" && (
         <div className="panel profile-form">
-          <h2>Put learning into practice.</h2>
+          <h2>Assignment instructions</h2>
+          <p>
+            Set the task learners will complete. Review their submitted answers
+            and uploaded files in Assessments.
+          </p>
+          <Link className="text-link" href="/admin/review">
+            View assignment submissions <ArrowUpRight size={17} />
+          </Link>
           <label>
             Assignment title
             <input
@@ -946,8 +954,9 @@ export default function Editor({
             />
           </label>
           <p>
-            Learners can submit a written response. Instructor approval is
-            required for program certification.
+            Learners can submit a written response or upload a PDF or document.
+            Review the work, leave feedback, then approve it or request a
+            revision.
           </p>
         </div>
       )}
